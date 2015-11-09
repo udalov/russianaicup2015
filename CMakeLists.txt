@@ -24,9 +24,10 @@ add_library(russianaicup
     RemoteProcessClient.cpp
     Runner.cpp
     Strategy.cpp
+    math2d.cpp
 )
 
-# add_subdirectory(test)
+add_subdirectory(test)
 
 add_executable(Runner runner-main.cpp)
 add_executable(my-main main.cpp)
