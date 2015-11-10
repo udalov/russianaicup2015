@@ -11,6 +11,8 @@
       <sourceFolder url="file://$MODULE_DIR$/csimplesocket/PassiveSocket.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/csimplesocket/SimpleSocket.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/csimplesocket/SimpleSocket.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Go.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Go.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/math2d.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/math2d.h" isTestSource="false" />
@@ -45,6 +47,8 @@
       <sourceFolder url="file://$MODULE_DIR$/runner-main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Runner.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Runner.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/State.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/State.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Strategy.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Strategy.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/CMakeLists.txt" isTestSource="false" />
