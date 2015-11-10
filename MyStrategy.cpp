@@ -1,10 +1,6 @@
 #include "MyStrategy.h"
 
 #define PI 3.14159265358979323846
-#define _USE_MATH_DEFINES
-
-#include <cmath>
-#include <cstdlib>
 
 using namespace model;
 using namespace std;
