@@ -19,7 +19,7 @@ int main() {
 
     auto local_runner_thread = std::thread(run_local_runner);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(vis ? 2200 : 1200));
+    std::this_thread::sleep_for(std::chrono::milliseconds(vis ? 2600 : 1200));
     Runner runner("127.0.0.1", "31001", "0000000000000000");
     runner.run();
     local_runner_thread.join();
