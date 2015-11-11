@@ -1,9 +1,7 @@
-import model.Car;
 import model.Game;
 import model.World;
 
 import java.awt.*;
-import java.util.Arrays;
 
 import static java.lang.StrictMath.*;
 
@@ -35,42 +33,37 @@ public final class LocalTestRendererListener {
         }
 
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
-
-        graphics.setColor(Color.BLACK);
-        drawRect(100.0D, 100.0D, 5100.0D, 5100.0D);
-
-        for (Car car : world.getCars()) {
-            drawCircle(car.getX(), car.getY(), hypot(car.getWidth(), car.getHeight()) / 2.0D);
-        }
     }
 
     private void handleMessage(Graphics graphics, String message) {
-        if (message.startsWith("rect ")) {
-            String[] argStr = message.substring("rect ".length()).split(" ");
-            double[] args = new double[argStr.length];
-            for (int i = 0; i < argStr.length; i++) {
-                args[i] = Double.valueOf(argStr[i]);
+        String[] command = message.split(" ");
+        if (command.length == 0) return;
+
+        double[] args = new double[command.length - 1];
+        for (int i = 0; i < command.length - 1; i++) {
+            try {
+                args[i] = Double.valueOf(command[i + 1]);
+            } catch (NumberFormatException e) {
+                return;
             }
-            if (args.length == 4) {
+        }
+
+        switch (command[0]) {
+            case "rect":
                 drawRect(args[0], args[1], args[2], args[3]);
-            } else {
-                warn("bad message (" + args.length + " arguments): " + message);
-            }
-        } else {
-            log("unknown message: " + message);
+                break;
+            case "line":
+                drawLine(args[0], args[1], args[2], args[3]);
+                break;
+            default:
+                log("unknown message: " + message);
+                break;
         }
     }
 
     public void afterDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
-
-        graphics.setColor(Color.BLACK);
-        drawCircle(2600.0D, 2600.0D, 2400.0D);
-
-        for (Car car : world.getCars()) {
-            fillCircle(car.getX(), car.getY(), car.getHeight() / 2.0D);
-        }
     }
 
     private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
@@ -92,49 +85,49 @@ public final class LocalTestRendererListener {
         Point2I lineBegin = toCanvasPosition(x1, y1);
         Point2I lineEnd = toCanvasPosition(x2, y2);
 
-        graphics.drawLine(lineBegin.getX(), lineBegin.getY(), lineEnd.getX(), lineEnd.getY());
+        graphics.drawLine(lineBegin.x, lineBegin.y, lineEnd.x, lineEnd.y);
     }
 
     private void fillCircle(double centerX, double centerY, double radius) {
         Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
         Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
 
-        graphics.fillOval(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+        graphics.fillOval(topLeft.x, topLeft.y, size.x, size.y);
     }
 
     private void drawCircle(double centerX, double centerY, double radius) {
         Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
         Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
 
-        graphics.drawOval(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+        graphics.drawOval(topLeft.x, topLeft.y, size.x, size.y);
     }
 
     private void fillArc(double centerX, double centerY, double radius, int startAngle, int arcAngle) {
         Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
         Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
 
-        graphics.fillArc(topLeft.getX(), topLeft.getY(), size.getX(), size.getY(), startAngle, arcAngle);
+        graphics.fillArc(topLeft.x, topLeft.y, size.x, size.y, startAngle, arcAngle);
     }
 
     private void drawArc(double centerX, double centerY, double radius, int startAngle, int arcAngle) {
         Point2I topLeft = toCanvasPosition(centerX - radius, centerY - radius);
         Point2I size = toCanvasOffset(2.0D * radius, 2.0D * radius);
 
-        graphics.drawArc(topLeft.getX(), topLeft.getY(), size.getX(), size.getY(), startAngle, arcAngle);
+        graphics.drawArc(topLeft.x, topLeft.y, size.x, size.y, startAngle, arcAngle);
     }
 
     private void fillRect(double left, double top, double width, double height) {
         Point2I topLeft = toCanvasPosition(left, top);
         Point2I size = toCanvasOffset(width, height);
 
-        graphics.fillRect(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+        graphics.fillRect(topLeft.x, topLeft.y, size.x, size.y);
     }
 
     private void drawRect(double left, double top, double width, double height) {
         Point2I topLeft = toCanvasPosition(left, top);
         Point2I size = toCanvasOffset(width, height);
 
-        graphics.drawRect(topLeft.getX(), topLeft.getY(), size.getX(), size.getY());
+        graphics.drawRect(topLeft.x, topLeft.y, size.x, size.y);
     }
 
     private void drawPolygon(Point2D... points) {
@@ -143,12 +136,12 @@ public final class LocalTestRendererListener {
         for (int pointIndex = 1; pointIndex < pointCount; ++pointIndex) {
             Point2D pointA = points[pointIndex];
             Point2D pointB = points[pointIndex - 1];
-            drawLine(pointA.getX(), pointA.getY(), pointB.getX(), pointB.getY());
+            drawLine(pointA.x, pointA.y, pointB.x, pointB.y);
         }
 
         Point2D pointA = points[0];
         Point2D pointB = points[pointCount - 1];
-        drawLine(pointA.getX(), pointA.getY(), pointB.getX(), pointB.getY());
+        drawLine(pointA.x, pointA.y, pointB.x, pointB.y);
     }
 
     private Point2I toCanvasOffset(double x, double y) {
@@ -160,38 +153,19 @@ public final class LocalTestRendererListener {
     }
 
     private static final class Point2I {
-        private int x;
-        private int y;
+        public final int x;
+        public final int y;
 
-        private Point2I(double x, double y) {
+        public Point2I(double x, double y) {
             this.x = toInt(round(x));
             this.y = toInt(round(y));
         }
 
-        private Point2I(int x, int y) {
+        public Point2I(int x, int y) {
             this.x = x;
             this.y = y;
         }
 
-        private Point2I() {
-        }
-
-        public int getX() {
-            return x;
-        }
-
-        public void setX(int x) {
-            this.x = x;
-        }
-
-        public int getY() {
-            return y;
-        }
-
-        public void setY(int y) {
-            this.y = y;
-        }
-        
         private static int toInt(double value) {
             @SuppressWarnings("NumericCastThatLosesPrecision") int intValue = (int) value;
             if (abs((double) intValue - value) < 1.0D) {
@@ -202,30 +176,11 @@ public final class LocalTestRendererListener {
     }
 
     private static final class Point2D {
-        private double x;
-        private double y;
+        public final double x;
+        public final double y;
 
-        private Point2D(double x, double y) {
+        public Point2D(double x, double y) {
             this.x = x;
-            this.y = y;
-        }
-
-        private Point2D() {
-        }
-
-        public double getX() {
-            return x;
-        }
-
-        public void setX(double x) {
-            this.x = x;
-        }
-
-        public double getY() {
-            return y;
-        }
-
-        public void setY(double y) {
             this.y = y;
         }
     }

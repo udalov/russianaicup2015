@@ -9,12 +9,16 @@ using std::abs;
 const double eps_line_contains = 1e-6;
 const double eps_equality = 1e-9;
 
+double my_sin(double x);
+double my_cos(double y);
+
 struct Vec {
     double x;
     double y;
 
     Vec(double x, double y) : x(x), y(y) { }
     Vec(const Vec& other) : x(other.x), y(other.y) { }
+    Vec(double angle) : x(my_cos(angle)), y(my_sin(angle)) { }
 
     bool operator==(const Vec& other) const {
         return abs(x - other.x) < eps_equality && abs(y - other.y) < eps_equality;
@@ -33,6 +37,7 @@ struct Vec {
     Vec operator+(const Vec& other) const;
     Vec operator-(const Vec& other) const;
     Vec operator*(double coeff) const;
+    Vec operator-() const;
 
     double operator*(const Vec& other) const;
     double operator^(const Vec& other) const;

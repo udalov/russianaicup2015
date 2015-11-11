@@ -36,6 +36,8 @@ struct CarPosition {
               health(car->getDurability()) { }
 
     CarPosition apply(const Go& move) const;
+
+    vector<Point> getPoints() const;
 };
 
 struct OilSlickPosition {

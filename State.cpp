@@ -52,5 +52,18 @@ WasherPosition WasherPosition::apply() const {
 
 CarPosition CarPosition::apply(const Go& move) const {
     // TODO
-    return CarPosition(this->original);
+    auto location = this->location.shift(this->velocity);
+    auto velocity = this->velocity + Vec(this->angle) * move.enginePower;
+    return CarPosition(this->original, location, velocity, this->angle, this->angularSpeed, this->health);
+}
+
+vector<Point> CarPosition::getPoints() const {
+    auto forward = Vec(angle) * (original->getWidth() / 2);
+    auto sideways = Vec(angle + M_PI / 2) * (original->getHeight() / 2);
+    return {
+            location.shift(forward - sideways),
+            location.shift(forward + sideways),
+            location.shift(-forward + sideways),
+            location.shift(-forward - sideways)
+    };
 }

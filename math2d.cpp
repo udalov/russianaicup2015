@@ -40,6 +40,10 @@ Vec Vec::operator-(const Vec& other) const {
     return Vec(x - other.x, y - other.y);
 }
 
+Vec Vec::operator-() const {
+    return Vec(-x, -y);
+}
+
 double Vec::operator*(const Vec& other) const {
     return x * other.x + y * other.y;
 }

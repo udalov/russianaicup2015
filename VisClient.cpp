@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vector>
+#include <sstream>
 #include "VisClient.h"
 
-using std::string;
-using std::vector;
+using namespace std;
 
 void writeBytes(CActiveSocket& socket, const vector<char>& bytes) {
     auto byteCount = bytes.size();
@@ -15,14 +15,14 @@ void writeBytes(CActiveSocket& socket, const vector<char>& bytes) {
     }
 
     if (offset != byteCount) {
-        std::cerr << "failed to send: " << offset << " != " << byteCount << std::endl;
+        cerr << "failed to send: " << offset << " != " << byteCount << endl;
     }
 }
 
 void writeString(CActiveSocket& socket, const string& str) {
     auto len = str.length();
     if (len > 65535) {
-        std::cerr << "cannot send very large string (" << len << " chars): " << str << std::endl;
+        cerr << "cannot send very large string (" << len << " chars): " << str << endl;
         return;
     }
 
@@ -45,10 +45,16 @@ VisClient::VisClient(int port) {
 
     if (!socket.Open((uint8 *) "localhost", (int16) port)) {
         valid = false;
-        std::cerr << "no visualization" << std::endl;
+        cerr << "no visualization" << endl;
         return;
     }
 
     valid = true;
-    std::cerr << "vis client socket opened on port " << port << std::endl;
+    cerr << "vis client socket opened on port " << port << endl;
+}
+
+void VisClient::drawLine(double x1, double y1, double x2, double y2) {
+    ostringstream ss;
+    ss << "line " << x1 << " " << y1 << " " << x2 << " " << y2 << endl;
+    send(ss.str());
 }

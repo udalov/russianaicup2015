@@ -17,6 +17,7 @@ TEST_F(Math2DTest, VecArithmetic) {
     EXPECT_EQ((Vec { -4.0, 5.0 }), a + b);
     EXPECT_EQ((Vec { 6.0, -1.0 }), a - b);
     EXPECT_EQ((Vec { 2.5, 5.0 }), a * 2.5);
+    EXPECT_EQ((Vec { 5.0, -3.0 }), -b);
     EXPECT_DOUBLE_EQ(1.0, a * b);
     EXPECT_DOUBLE_EQ(13.0, a ^ b);
 }
