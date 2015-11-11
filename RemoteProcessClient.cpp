@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <thread>
 
 using namespace model;
 using namespace std;
@@ -13,12 +14,11 @@ const int LONG_SIZE_BYTES = sizeof(long long);
 RemoteProcessClient::RemoteProcessClient(string host, int port)
         : cachedBoolFlag(false), cachedBoolValue(false), mapName(""), tilesXY(vector<vector<TileType> > ()),
         waypoints(vector<vector<int> > ()), startingDirection(_DIRECTION_COUNT_) {
-    socket.Initialize();
-    socket.DisableNagleAlgoritm();
-
-    if (!socket.Open((uint8*) host.c_str(), (int16) port)) {
-        exit(10001);
-    }
+    do {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        socket.Initialize();
+        socket.DisableNagleAlgoritm();
+    } while (!socket.Open((uint8*) host.c_str(), (int16) port));
 }
 
 void RemoteProcessClient::writeTokenMessage(const string& token) {
