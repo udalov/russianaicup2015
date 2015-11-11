@@ -3,12 +3,12 @@
 #include <thread>
 #include "Runner.h"
 
-bool vis = true;
+bool visualization_mode = true;
 
 void run_local_runner() {
     chdir("/Users/udalov/c/russianaicup15");
     auto command = std::string { "java -jar lib/local-runner.jar " };
-    if (vis) command += "lib/local-runner.properties";
+    if (visualization_mode) command += "lib/local-runner.properties";
     else command += "lib/local-runner-console.properties";
     std::system(command.c_str());
     std::system("cat out/result.txt");
@@ -19,7 +19,7 @@ int main() {
 
     auto local_runner_thread = std::thread(run_local_runner);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(vis ? 2600 : 1200));
+    std::this_thread::sleep_for(std::chrono::milliseconds(visualization_mode ? 4000 : 2000));
     Runner runner("127.0.0.1", "31001", "0000000000000000");
     runner.run();
     local_runner_thread.join();

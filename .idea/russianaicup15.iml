@@ -57,6 +57,8 @@
       <sourceFolder url="file://$MODULE_DIR$/test/gtest-1.7.0/src/gtest-all.cc" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/gtest-1.7.0/src/gtest_main.cc" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/Math2DTest.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/VisClient.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/VisClient.h" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

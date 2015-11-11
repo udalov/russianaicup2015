@@ -27,7 +27,7 @@ add_library(russianaicup
         math2d.cpp
         State.cpp
         Go.cpp
-        )
+        VisClient.cpp)
 
 add_subdirectory(test)
 

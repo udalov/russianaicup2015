@@ -1,10 +1,19 @@
-import java.awt.*;
+import model.Car;
+import model.Game;
+import model.World;
 
-import model.*;
+import java.awt.*;
+import java.util.Arrays;
 
 import static java.lang.StrictMath.*;
 
 public final class LocalTestRendererListener {
+    private static final LocalServer server = LocalServer.INSTANCE;
+
+    static {
+        server.run();
+    }
+
     private Graphics graphics;
     private World world;
     private Game game;
@@ -19,6 +28,12 @@ public final class LocalTestRendererListener {
 
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                 double left, double top, double width, double height) {
+        while (true) {
+            String message = server.messages.poll();
+            if (message == null) break;
+            handleMessage(graphics, message);
+        }
+
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
         graphics.setColor(Color.BLACK);
@@ -26,6 +41,23 @@ public final class LocalTestRendererListener {
 
         for (Car car : world.getCars()) {
             drawCircle(car.getX(), car.getY(), hypot(car.getWidth(), car.getHeight()) / 2.0D);
+        }
+    }
+
+    private void handleMessage(Graphics graphics, String message) {
+        if (message.startsWith("rect ")) {
+            String[] argStr = message.substring("rect ".length()).split(" ");
+            double[] args = new double[argStr.length];
+            for (int i = 0; i < argStr.length; i++) {
+                args[i] = Double.valueOf(argStr[i]);
+            }
+            if (args.length == 4) {
+                drawRect(args[0], args[1], args[2], args[3]);
+            } else {
+                warn("bad message (" + args.length + " arguments): " + message);
+            }
+        } else {
+            log("unknown message: " + message);
         }
     }
 
@@ -196,5 +228,13 @@ public final class LocalTestRendererListener {
         public void setY(double y) {
             this.y = y;
         }
+    }
+
+    private static void warn(String message) {
+        System.err.println("renderer: " + message);
+    }
+
+    private static void log(String message) {
+        // System.err.println("renderer: " + message);
     }
 }
