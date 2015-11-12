@@ -12,6 +12,7 @@ using model::Car;
 using model::OilSlick;
 using model::Projectile;
 using model::World;
+using std::string;
 using std::vector;
 
 struct CarPosition {
@@ -20,12 +21,14 @@ struct CarPosition {
     Vec velocity;
     double angle;
     double angularSpeed;
+    double enginePower;
+    double wheelTurn;
     double health;
 
     CarPosition(const Car *original, const Point& location, const Vec& velocity, double angle, double angularSpeed,
-                double health)
+                double enginePower, double wheelTurn, double health)
             : original(original), location(location), velocity(velocity), angle(angle), angularSpeed(angularSpeed),
-              health(health) { }
+              enginePower(enginePower), wheelTurn(wheelTurn), health(health) { }
 
     CarPosition(const Car *car)
             : original(car),
@@ -33,11 +36,15 @@ struct CarPosition {
               velocity(Vec(car->getSpeedX(), car->getSpeedY())),
               angle(car->getAngle()),
               angularSpeed(car->getAngularSpeed()),
+              enginePower(car->getEnginePower()),
+              wheelTurn(car->getWheelTurn()),
               health(car->getDurability()) { }
 
-    CarPosition apply(const Go& move) const;
+    CarPosition apply(const Go& move, double newEnginePower, double newWheelTurn, double updateFactor) const;
 
     vector<Point> getPoints() const;
+
+    string toString() const;
 };
 
 struct OilSlickPosition {

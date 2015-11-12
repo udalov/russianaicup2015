@@ -1,14 +1,15 @@
 #include <cmath>
+#include <sstream>
 #include "math2d.h"
 
 using namespace std;
 
 double Vec::angle() const {
-    return my_atan2(y, x);
+    return myAtan2(y, x);
 }
 
 double Vec::length() const {
-    return my_hypot(x, y);
+    return myHypot(x, y);
 }
 
 Vec Vec::normalize() const {
@@ -25,7 +26,7 @@ double Vec::projection(const Vec& other) const {
 }
 
 double Vec::angleTo(const Vec& other) const {
-    return normalize_angle(angle() - other.angle());
+    return normalizeAngle(angle() - other.angle());
 }
 
 Vec Vec::operator*(double coeff) const {
@@ -71,30 +72,48 @@ Point Line::project(const Point& point) const {
     return Point { x, y };
 }
 
-double my_hypot(double x, double y) {
+double myHypot(double x, double y) {
     // This is faster than hypot
     return sqrt(x * x + y * y);
 }
 
-double my_atan2(double y, double x) {
+double myAtan2(double y, double x) {
     // TODO: faster
     return atan2(y, x);
 }
 
-double my_sin(double x) {
+double mySin(double x) {
+    return sin(x);
+    // TODO: fix and enable
+    /*
     x /= (M_PI / 2);
     if (x > 0.999999999) x = 2 - x;
     else if (x < -0.999999999) x = -2 - x;
     double x2 = x * x;
     return ((((.00015148419 * x2 - .00467376557) * x2 + .07968967928) * x2 - .64596371106) * x2 + 1.57079631847) * x;
+    */
 }
 
-double my_cos(double y) {
-    return my_sin(M_PI / 2 - y);
+double myCos(double y) {
+    return mySin(M_PI / 2 - y);
 }
 
-double normalize_angle(double alpha) {
+double normalizeAngle(double alpha) {
     while (alpha < -M_PI) alpha += 2 * M_PI;
     while (alpha > M_PI) alpha -= 2 * M_PI;
     return alpha;
+}
+
+string Vec::toString() const {
+    ostringstream ss;
+    ss.precision(8);
+    ss << fixed << "(" << x << ", " << y << ")";
+    return ss.str();
+}
+
+string Point::toString() const {
+    ostringstream ss;
+    ss.precision(8);
+    ss << fixed << "(" << x << ", " << y << ")";
+    return ss.str();
 }

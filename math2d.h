@@ -2,15 +2,17 @@
 
 #include <array>
 #include <cmath>
+#include <string>
 
 using std::array;
 using std::abs;
+using std::string;
 
 const double eps_line_contains = 1e-6;
 const double eps_equality = 1e-9;
 
-double my_sin(double x);
-double my_cos(double y);
+double mySin(double x);
+double myCos(double y);
 
 struct Vec {
     double x;
@@ -18,7 +20,7 @@ struct Vec {
 
     Vec(double x, double y) : x(x), y(y) { }
     Vec(const Vec& other) : x(other.x), y(other.y) { }
-    Vec(double angle) : x(my_cos(angle)), y(my_sin(angle)) { }
+    Vec(double angle) : x(myCos(angle)), y(mySin(angle)) { }
 
     bool operator==(const Vec& other) const {
         return abs(x - other.x) < eps_equality && abs(y - other.y) < eps_equality;
@@ -41,6 +43,8 @@ struct Vec {
 
     double operator*(const Vec& other) const;
     double operator^(const Vec& other) const;
+
+    string toString() const;
 };
 
 struct Point {
@@ -55,6 +59,8 @@ struct Point {
     }
 
     Point shift(const Vec& direction) const;
+
+    string toString() const;
 };
 
 struct Line {
@@ -73,10 +79,10 @@ struct Line {
     Point project(const Point& point) const;
 };
 
-double my_hypot(double x, double y);
-double my_atan2(double y, double x);
-double my_sin(double x);
-double my_cos(double y);
+double myHypot(double x, double y);
+double myAtan2(double y, double x);
+double mySin(double x);
+double myCos(double y);
 
 // Normalizes the angle to the range [-PI, PI]
-double normalize_angle(double alpha);
+double normalizeAngle(double alpha);
