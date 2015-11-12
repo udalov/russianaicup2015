@@ -49,6 +49,8 @@
       <sourceFolder url="file://$MODULE_DIR$/Runner.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/State.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/State.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Const.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Const.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Strategy.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Strategy.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/CMakeLists.txt" isTestSource="false" />

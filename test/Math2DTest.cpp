@@ -89,13 +89,13 @@ TEST_F(Math2DTest, LineContains) {
 
 TEST_F(Math2DTest, SinCos) {
     // TODO: improve
-    double tolerance = 0.004;
+    double tolerance = 0.0000001;
     for (int i = 0; i <= 360; i++) {
         auto phi = M_PI * i / 180;
-        EXPECT_NEAR(sin(phi), my_sin(phi), tolerance);
+        EXPECT_NEAR(sin(phi), mySin(phi), tolerance);
     }
     for (int i = 0; i <= 360; i++) {
         auto phi = M_PI * i / 180;
-        EXPECT_NEAR(cos(phi), my_cos(phi), tolerance);
+        EXPECT_NEAR(cos(phi), myCos(phi), tolerance);
     }
 }

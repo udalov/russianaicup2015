@@ -1,4 +1,5 @@
 #include <iostream>
+#include "Const.h"
 #include "MyStrategy.h"
 #include "State.h"
 #include "VisClient.h"
@@ -8,16 +9,19 @@ using namespace std;
 
 VisClient *vis = nullptr;
 
-void initialize() {
+void initialize(const Game& game) {
     vis = new VisClient(29292);
     vis->send("hello");
+
+    Const::getInstance().game = game;
+}
 }
 
 void MyStrategy::move(const Car& self, const World& world, const Game& game, Move& move) {
     static bool initialized = false;
     if (!initialized) {
         initialized = true;
-        initialize();
+        initialize(game);
     }
     
     auto state = State(&world);

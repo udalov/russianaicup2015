@@ -26,6 +26,8 @@ public final class LocalTestRendererListener {
 
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                 double left, double top, double width, double height) {
+        ConstDump.run(game);
+
         while (true) {
             String message = server.messages.poll();
             if (message == null) break;
