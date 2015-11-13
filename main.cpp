@@ -3,27 +3,31 @@
 #include <thread>
 #include "Runner.h"
 
-bool visualization_mode = true;
+using std::string;
 
-void run_local_runner() {
-    chdir("/Users/udalov/c/russianaicup15");
-    auto command = std::string { "java -jar lib/local-runner.jar " };
-    if (visualization_mode) command += "lib/local-runner.properties";
+void runLocalRunner(bool vis) {
+    string command = "java -jar lib/local-runner.jar ";
+    if (vis) command += "lib/local-runner.properties";
     else command += "lib/local-runner-console.properties";
     std::system(command.c_str());
     std::system("cat out/result.txt");
 }
 
-int main() {
-    auto begin_time = clock();
+int main(int argc, char *argv[]) {
+    auto startTime = clock();
 
-    auto local_runner_thread = std::thread(run_local_runner);
+    bool vis = false;
+    for (int i = 1; i < argc; i++) {
+        vis |= string("-vis") == argv[i];
+    }
+
+    auto localRunner = std::thread(runLocalRunner, vis);
 
     Runner runner("127.0.0.1", "31001", "0000000000000000");
     runner.run();
-    local_runner_thread.join();
+    localRunner.join();
 
-    auto end_time = clock();
+    auto finishTime = clock();
 
-    fprintf(stderr, "CPU time: %.3lf\n", (end_time - begin_time) * 1.0 / CLOCKS_PER_SEC);
+    fprintf(stderr, "CPU time: %.3lf\n", (finishTime - startTime) * 1.0 / CLOCKS_PER_SEC);
 }
