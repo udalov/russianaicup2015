@@ -2,10 +2,12 @@
 #include "Const.h"
 
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 
 const int ITERATION_COUNT_PER_STEP = 10;
+const double EPSILON = 1e-7;
 
 State::State(const World *world) : original(world) {
     auto& cars = world->getCars();
@@ -42,21 +44,24 @@ State State::apply(const vector<Go>& moves) const {
     const double updateFactor = 1.0 / ITERATION_COUNT_PER_STEP;
 
     vector<CarPosition> cars(this->cars);
-    vector<double> newEnginePower(cars.size());
-    vector<double> newWheelTurn(cars.size());
+    vector<double> medianAngularSpeed(cars.size());
     for (auto i = 0UL, size = cars.size(); i < size; i++) {
-        newEnginePower[i] = updateEnginePower(cars[i].enginePower, moves[i].enginePower);
-        newWheelTurn[i] = updateWheelTurn(cars[i].wheelTurn, moves[i].wheelTurn);
-    }
-    for (auto i = 0UL, size = cars.size(); i < size; i++) {
-        // TODO: this formula is not correct, this should be a median angular velocity instead
-        cars[i].angularSpeed +=
-                newWheelTurn[i] * Const::getGame().getCarAngularSpeedFactor() *
-                (cars[i].velocity * Vec(cars[i].angle));
+        // TODO: find out if it's possible to compute exact old median angular speed without storing it in CarPosition
+        double oldMedianAngularSpeedApproximation = cars[i].wheelTurn * Const::getGame().getCarAngularSpeedFactor() *
+                                                    (cars[i].velocity * cars[i].direction());
+
+        cars[i].enginePower = updateEnginePower(cars[i].enginePower, moves[i].enginePower);
+        cars[i].wheelTurn = updateWheelTurn(cars[i].wheelTurn, moves[i].wheelTurn);
+
+        medianAngularSpeed[i] =
+                cars[i].wheelTurn * Const::getGame().getCarAngularSpeedFactor() *
+                (cars[i].velocity * cars[i].direction());
+
+        cars[i].angularSpeed += medianAngularSpeed[i] - oldMedianAngularSpeedApproximation;
     }
     for (int iteration = 1; iteration <= ITERATION_COUNT_PER_STEP; iteration++) {
         for (auto i = 0UL, size = cars.size(); i < size; i++) {
-            cars[i] = cars[i].apply(moves[i], newEnginePower[i], newWheelTurn[i], updateFactor);
+            cars[i].advance(moves[i], medianAngularSpeed[i], updateFactor);
         }
     }
 
@@ -86,62 +91,65 @@ WasherPosition WasherPosition::apply() const {
     return WasherPosition(this->original);
 }
 
-CarPosition CarPosition::apply(const Go& move, double newEnginePower, double newWheelTurn, double updateFactor) const {
+void CarPosition::advance(const Go& move, double medianAngularSpeed, double updateFactor) {
     auto game = Const::getGame();
 
     // Location
 
-    auto newLocation = location.shift(velocity * updateFactor);
+    location = location.shift(velocity * updateFactor);
 
-    auto acceleration = newEnginePower *
-            (newEnginePower < 0 ? game.getBuggyEngineRearPower() : game.getBuggyEngineForwardPower()) /
+    auto acceleration = enginePower *
+            (enginePower < 0 ? game.getBuggyEngineRearPower() : game.getBuggyEngineForwardPower()) /
             game.getBuggyMass();
-    auto newVelocity = velocity + Vec(angle) * acceleration * updateFactor;
+    velocity = velocity + direction() * acceleration * updateFactor;
 
     // Air friction
 
     auto airFriction = pow(1.0 - game.getCarMovementAirFrictionFactor(), updateFactor);
-    newVelocity = newVelocity * airFriction;
+    velocity = velocity * airFriction;
 
     // Movement friction
 
-    auto lengthwiseVelocityChange = game.getCarLengthwiseMovementFrictionFactor() * updateFactor;
-    auto lengthwiseUnitVector = Vec(angle);
-    auto lengthwiseVelocityPart = newVelocity * lengthwiseUnitVector;
+    const double lengthwiseVelocityChange = game.getCarLengthwiseMovementFrictionFactor() * updateFactor;
+    auto lengthwiseUnitVector = direction();
+    auto lengthwiseVelocityPart = velocity * lengthwiseUnitVector;
     lengthwiseVelocityPart =
             lengthwiseVelocityPart >= 0.0
             ? max(lengthwiseVelocityPart - lengthwiseVelocityChange, 0.0)
             : min(lengthwiseVelocityPart + lengthwiseVelocityChange, 0.0);
 
-    auto crosswiseVelocityChange = game.getCarCrosswiseMovementFrictionFactor() * updateFactor;
+    const double crosswiseVelocityChange = game.getCarCrosswiseMovementFrictionFactor() * updateFactor;
     auto crosswiseUnitVector = Vec(angle + M_PI / 2);
-    auto crosswiseVelocityPart = newVelocity * crosswiseUnitVector;
+    auto crosswiseVelocityPart = velocity * crosswiseUnitVector;
     crosswiseVelocityPart =
             crosswiseVelocityPart >= 0.0
             ? max(crosswiseVelocityPart - crosswiseVelocityChange, 0.0)
             : min(crosswiseVelocityPart + crosswiseVelocityChange, 0.0);
 
-    newVelocity = lengthwiseUnitVector * lengthwiseVelocityPart + crosswiseUnitVector * crosswiseVelocityPart;
+    velocity = lengthwiseUnitVector * lengthwiseVelocityPart + crosswiseUnitVector * crosswiseVelocityPart;
 
     // Angle
 
-    auto newAngle = angle + angularSpeed * updateFactor;
+    angle += angularSpeed * updateFactor;
 
     // Rotation air friction
 
-    auto rotationAirFriction = pow(1.0 - game.getCarRotationAirFrictionFactor(), updateFactor);
-    auto newAngularSpeed = angularSpeed * rotationAirFriction;
+    angularSpeed -= medianAngularSpeed;
+
+    const double rotationAirFriction = pow(1.0 - game.getCarRotationAirFrictionFactor(), updateFactor);
+    angularSpeed *= rotationAirFriction;
+
+    if (abs(angularSpeed) < EPSILON) angularSpeed = 0.0;
 
     // Rotation friction
 
-    if (abs(newAngularSpeed) > 0.0) {
-        auto rotationFrictionFactor = game.getCarRotationFrictionFactor() * updateFactor;
-        newAngularSpeed =
-                rotationFrictionFactor >= abs(newAngularSpeed) ? 0.0 : newAngularSpeed - rotationFrictionFactor;
-    }
+    const double rotationFrictionFactor = game.getCarRotationFrictionFactor() * updateFactor;
+    angularSpeed =
+            angularSpeed > 0.0
+            ? max(angularSpeed - rotationFrictionFactor, 0.0)
+            : min(angularSpeed + rotationFrictionFactor, 0.0);
 
-    return CarPosition(this->original, newLocation, newVelocity, newAngle, newAngularSpeed, newEnginePower,
-                       newWheelTurn, this->health);
+    angularSpeed += medianAngularSpeed;
 }
 
 vector<Point> CarPosition::getPoints() const {
@@ -157,11 +165,12 @@ vector<Point> CarPosition::getPoints() const {
 
 string CarPosition::toString() const {
     ostringstream ss;
-    ss << "car at " << location.toString() <<
+    ss.precision(8);
+    ss << fixed << "car at " << location.toString() <<
             " going " << velocity.toString() <<
-            " angle " << to_string(angle) <<
-            " angular " << to_string(angularSpeed) <<
-            " engine " << to_string(enginePower) <<
-            " wheel " << to_string(wheelTurn);
+            " angle " << angle <<
+            " angular " << angularSpeed <<
+            " engine " << enginePower <<
+            " wheel " << wheelTurn;
     return ss.str();
 }

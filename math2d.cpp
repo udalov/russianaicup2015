@@ -57,6 +57,10 @@ Point Point::shift(const Vec& direction) const {
     return Point(x + direction.x, y + direction.y);
 }
 
+double Point::distanceTo(const Point& other) const {
+    return myHypot(x - other.x, y - other.y);
+}
+
 bool Line::contains(const Point& point) const {
     return abs(a * point.x + b * point.y - c) < eps_line_contains;
 }

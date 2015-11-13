@@ -87,6 +87,14 @@ TEST_F(Math2DTest, LineContains) {
     EXPECT_FALSE(l.contains(Point { 4., 1. }));
 }
 
+TEST_F(Math2DTest, PointArithmetic) {
+    auto p = Point { 2.0, -3.0 };
+    auto v = Vec { -2.0, 4.0 };
+    auto q = p.shift(v);
+    EXPECT_EQ((Point { 0.0, 1.0 }), q);
+    EXPECT_DOUBLE_EQ(v.length(), p.distanceTo(q));
+}
+
 TEST_F(Math2DTest, SinCos) {
     // TODO: improve
     double tolerance = 0.0000001;

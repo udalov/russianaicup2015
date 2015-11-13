@@ -32,6 +32,13 @@ void drawPoly(const vector<Point>& points) {
     }
 }
 
+Go moveForTick(int tick) {
+    if (280 <= tick && tick < 290) {
+        return Go(1.0, 1.0);
+    }
+    return Go(1.0, 0.0);
+};
+
 // TODO: not safe
 unordered_map<int, CarPosition> expectedPosByTick;
 
@@ -42,21 +49,19 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         initialize(game);
     }
 
-    if (280 < world.getTick() && world.getTick() < 290) {
-        move.setWheelTurn(1.0);
-    }
-
-    move.setEnginePower(1.0);
+    auto experimentalMove = moveForTick(world.getTick());
+    move.setEnginePower(experimentalMove.enginePower);
+    move.setWheelTurn(experimentalMove.wheelTurn);
     move.setThrowProjectile(true);
     move.setSpillOil(true);
 
-    const int lookahead = 10;
+    const int lookahead = 1;
 
     auto currentState = State(&world);
-    auto go = Go(move.getEnginePower(), move.getWheelTurn());
-    auto moves = vector<Go> { go, go, go, go };
     auto state = currentState;
     for (int i = 0; i < lookahead; i++) {
+        auto go = moveForTick(world.getTick() + i);
+        vector<Go> moves = { go, go, go, go };
         state = state.apply(moves);
     }
     
@@ -65,16 +70,23 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 
     drawPoly(expectedMyCar.getPoints());
 
-/*
-    if (280 < world.getTick() && world.getTick() < 330) {
+    if (280 <= world.getTick() && world.getTick() <= 300) {
         auto currentInfo = expectedPosByTick.find(world.getTick());
         if (currentInfo != expectedPosByTick.end()) {
+            auto actual = getCarById(currentState, self.getId());
+            auto predicted = currentInfo->second;
             cout << "tick " << world.getTick() << endl;
-            cout << "  my position " << getCarById(currentState, self.getId()).toString() << endl;
-            cout << "  predicted " << currentInfo->second.toString() << endl;
+            cout << "  my position " << actual.toString() << endl;
+            cout << "  predicted " << predicted.toString() << endl;
+            cout.precision(8);
+            cout << fixed << "  diff location " << actual.location.distanceTo(predicted.location) <<
+                    " velocity " << (actual.velocity - predicted.velocity).toString() <<
+                    " angle " << abs(actual.angle - predicted.angle) <<
+                    " angular " << abs(actual.angularSpeed - predicted.angularSpeed) <<
+                    " engine " << abs(actual.enginePower - predicted.enginePower) <<
+                    " wheel " << abs(actual.wheelTurn - predicted.wheelTurn) << endl;
         }
     }
-*/
 }
 
 MyStrategy::MyStrategy() { }

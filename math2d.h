@@ -60,6 +60,8 @@ struct Point {
 
     Point shift(const Vec& direction) const;
 
+    double distanceTo(const Point& other) const;
+
     string toString() const;
 };
 

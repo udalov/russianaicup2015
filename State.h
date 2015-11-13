@@ -40,7 +40,9 @@ struct CarPosition {
               wheelTurn(car->getWheelTurn()),
               health(car->getDurability()) { }
 
-    CarPosition apply(const Go& move, double newEnginePower, double newWheelTurn, double updateFactor) const;
+    Vec direction() const { return Vec(angle); }
+
+    void advance(const Go& move, double medianAngularSpeed, double updateFactor);
 
     vector<Point> getPoints() const;
 
