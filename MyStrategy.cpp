@@ -1,9 +1,10 @@
-#include <iostream>
-#include <unordered_map>
 #include "Const.h"
 #include "MyStrategy.h"
 #include "State.h"
 #include "VisClient.h"
+
+#include <iostream>
+#include <unordered_map>
 
 using namespace model;
 using namespace std;

@@ -1,7 +1,8 @@
+#include "Runner.h"
+
 #include <cstdlib>
 #include <iostream>
 #include <thread>
-#include "Runner.h"
 
 using std::string;
 

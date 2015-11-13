@@ -1,7 +1,8 @@
+#include "VisClient.h"
+
 #include <iostream>
 #include <vector>
 #include <sstream>
-#include "VisClient.h"
 
 using namespace std;
 

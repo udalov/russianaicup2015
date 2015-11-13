@@ -1,12 +1,13 @@
 #pragma once
 
-#include <vector>
 #include "math2d.h"
 #include "model/Car.h"
 #include "model/OilSlick.h"
 #include "model/Projectile.h"
 #include "model/World.h"
 #include "Go.h"
+
+#include <vector>
 
 using model::Car;
 using model::OilSlick;

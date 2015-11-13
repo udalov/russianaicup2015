@@ -1,6 +1,7 @@
 #include "State.h"
 #include "Const.h"
 
+#include <algorithm>
 #include <sstream>
 #include <iostream>
 
@@ -12,18 +13,18 @@ const double EPSILON = 1e-7;
 State::State(const World *world) : original(world) {
     auto& cars = world->getCars();
     this->cars.reserve(cars.size());
-    for (auto i = 0UL, size = cars.size(); i < size; i++) {
+    for (unsigned long i = 0, size = cars.size(); i < size; i++) {
         this->cars.push_back(CarPosition(&cars[i]));
     }
 
     auto& oilSlicks = world->getOilSlicks();
     this->oilSlicks.reserve(oilSlicks.size());
-    for (auto i = 0UL, size = oilSlicks.size(); i < size; i++) {
+    for (unsigned long i = 0, size = oilSlicks.size(); i < size; i++) {
         this->oilSlicks.push_back(OilSlickPosition(&oilSlicks[i]));
     }
 
     auto& washers = world->getProjectiles();
-    for (auto i = 0UL, size = washers.size(); i < size; i++) {
+    for (unsigned long i = 0, size = washers.size(); i < size; i++) {
         this->washers.push_back(WasherPosition(&washers[i]));
     }
 }
@@ -45,7 +46,7 @@ State State::apply(const vector<Go>& moves) const {
 
     vector<CarPosition> cars(this->cars);
     vector<double> medianAngularSpeed(cars.size());
-    for (auto i = 0UL, size = cars.size(); i < size; i++) {
+    for (unsigned long i = 0, size = cars.size(); i < size; i++) {
         // TODO: find out if it's possible to compute exact old median angular speed without storing it in CarPosition
         double oldMedianAngularSpeedApproximation = cars[i].wheelTurn * Const::getGame().getCarAngularSpeedFactor() *
                                                     (cars[i].velocity * cars[i].direction());
@@ -60,7 +61,7 @@ State State::apply(const vector<Go>& moves) const {
         cars[i].angularSpeed += medianAngularSpeed[i] - oldMedianAngularSpeedApproximation;
     }
     for (int iteration = 1; iteration <= ITERATION_COUNT_PER_STEP; iteration++) {
-        for (auto i = 0UL, size = cars.size(); i < size; i++) {
+        for (unsigned long i = 0, size = cars.size(); i < size; i++) {
             cars[i].advance(moves[i], medianAngularSpeed[i], updateFactor);
         }
     }
@@ -155,12 +156,13 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
 vector<Point> CarPosition::getPoints() const {
     auto forward = Vec(angle) * (original->getWidth() / 2);
     auto sideways = Vec(angle + M_PI / 2) * (original->getHeight() / 2);
-    return {
+    vector<Point> result {
             location.shift(forward - sideways),
             location.shift(forward + sideways),
             location.shift(-forward + sideways),
             location.shift(-forward - sideways)
     };
+    return result;
 }
 
 string CarPosition::toString() const {

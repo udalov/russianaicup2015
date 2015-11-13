@@ -1,6 +1,7 @@
+#include "math2d.h"
+
 #include <cmath>
 #include <sstream>
-#include "math2d.h"
 
 using namespace std;
 
