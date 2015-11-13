@@ -47,18 +47,13 @@ State State::apply(const vector<Go>& moves) const {
     vector<CarPosition> cars(this->cars);
     vector<double> medianAngularSpeed(cars.size());
     for (unsigned long i = 0, size = cars.size(); i < size; i++) {
-        // TODO: find out if it's possible to compute exact old median angular speed without storing it in CarPosition
-        double oldMedianAngularSpeedApproximation = cars[i].wheelTurn * Const::getGame().getCarAngularSpeedFactor() *
-                                                    (cars[i].velocity * cars[i].direction());
-
         cars[i].enginePower = updateEnginePower(cars[i].enginePower, moves[i].enginePower);
         cars[i].wheelTurn = updateWheelTurn(cars[i].wheelTurn, moves[i].wheelTurn);
-
-        medianAngularSpeed[i] =
+        cars[i].angularSpeed =
                 cars[i].wheelTurn * Const::getGame().getCarAngularSpeedFactor() *
                 (cars[i].velocity * cars[i].direction());
 
-        cars[i].angularSpeed += medianAngularSpeed[i] - oldMedianAngularSpeedApproximation;
+        medianAngularSpeed[i] = cars[i].angularSpeed;
     }
     for (int iteration = 1; iteration <= ITERATION_COUNT_PER_STEP; iteration++) {
         for (unsigned long i = 0, size = cars.size(); i < size; i++) {

@@ -9,7 +9,7 @@
 using namespace model;
 using namespace std;
 
-// #define DEBUG_PHYSICS_PREDICTION
+#define DEBUG_PHYSICS_PREDICTION
 #ifndef ONLINE_JUDGE
 #define VISUALIZE
 #endif
