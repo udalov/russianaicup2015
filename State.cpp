@@ -174,3 +174,14 @@ string CarPosition::toString() const {
             " wheel " << wheelTurn;
     return ss.str();
 }
+
+CarPosition State::getCarById(long long id) const {
+    auto car = find_if(cars.begin(), cars.end(), [&id](const CarPosition& it) {
+        return it.original->getId() == id;
+    });
+    if (car == cars.end()) {
+        cerr << "car with id " << id << " not found" << endl;
+        return cars.front();
+    }
+    return *car;
+}

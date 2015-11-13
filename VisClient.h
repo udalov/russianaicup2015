@@ -1,8 +1,11 @@
 #pragma once
 
 #include "csimplesocket/ActiveSocket.h"
+#include "math2d.h"
+#include <vector>
 
 using std::string;
+using std::vector;
 
 struct VisClient {
     bool valid;
@@ -12,5 +15,6 @@ struct VisClient {
 
     void send(const string& message);
 
-    void drawLine(double x1, double y1, double x2, double y2);
+    void drawLine(const Point& first, const Point& second);
+    void drawPoly(const vector<Point>& points);
 };

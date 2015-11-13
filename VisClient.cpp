@@ -40,12 +40,16 @@ void VisClient::send(const string& message) {
 }
 
 VisClient::VisClient(int port) {
+    if (port == -1) {
+        valid = false;
+        return;
+    }
+
     socket.Initialize();
     socket.DisableNagleAlgoritm();
 
     if (!socket.Open((uint8 *) "localhost", (int16) port)) {
         valid = false;
-        cerr << "no visualization" << endl;
         return;
     }
 
@@ -53,8 +57,14 @@ VisClient::VisClient(int port) {
     cerr << "vis client socket opened on port " << port << endl;
 }
 
-void VisClient::drawLine(double x1, double y1, double x2, double y2) {
+void VisClient::drawLine(const Point& first, const Point& second) {
     ostringstream ss;
-    ss << "line " << x1 << " " << y1 << " " << x2 << " " << y2 << endl;
+    ss << "line " << first.x << " " << first.y << " " << second.x << " " << second.y << endl;
     send(ss.str());
+}
+
+void VisClient::drawPoly(const vector<Point>& points) {
+    for (auto i = 0UL; i < points.size(); i++) {
+        drawLine(points[i], points[i + 1 == points.size() ? 0 : i + 1]);
+    }
 }

@@ -91,5 +91,7 @@ struct State {
 
     State(const World *world);
 
+    CarPosition getCarById(long long id) const;
+
     State apply(const vector<Go>& moves) const;
 };

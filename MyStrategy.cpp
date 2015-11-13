@@ -8,48 +8,40 @@
 using namespace model;
 using namespace std;
 
+// #define DEBUG_PHYSICS_PREDICTION
+#ifndef ONLINE_JUDGE
+#define VISUALIZE
+#endif
+
 VisClient *vis = nullptr;
 
 void initialize(const Game& game) {
+#ifdef VISUALIZE
     vis = new VisClient(29292);
+#else
+    vis = new VisClient(-1);
+#endif
     vis->send("hello");
 
     Const::getInstance().game = game;
+    cout.precision(8);
+    cerr.precision(8);
 }
 
-CarPosition getCarById(const State& state, long long id) {
-    auto car = find_if(state.cars.begin(), state.cars.end(), [&id](const CarPosition& it) {
-        return it.original->getId() == id;
-    });
-    return car == state.cars.end() ? state.cars.front() : *car;
-}
+// ---- Debugging physics prediction ----
 
-void drawPoly(const vector<Point>& points) {
-    for (auto i = 0; i < points.size(); i++) {
-        auto p = points[i];
-        auto q = points[i + 1 == points.size() ? 0 : i + 1];
-        vis->drawLine(p.x, p.y, q.x, q.y);
-    }
-}
-
-Go moveForTick(int tick) {
+Go goDebugPhysicsPrediction(int tick) {
     if (280 <= tick && tick < 290) {
         return Go(1.0, 1.0);
     }
     return Go(1.0, 0.0);
 };
 
-// TODO: not safe
-unordered_map<int, CarPosition> expectedPosByTick;
+void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game& game, Move& move) {
+    // This map is not entirely safe, one should not dereference originals of cars there
+    static unordered_map<int, CarPosition> expectedPosByTick;
 
-void MyStrategy::move(const Car& self, const World& world, const Game& game, Move& move) {
-    static bool initialized = false;
-    if (!initialized) {
-        initialized = true;
-        initialize(game);
-    }
-
-    auto experimentalMove = moveForTick(world.getTick());
+    auto experimentalMove = goDebugPhysicsPrediction(world.getTick());
     move.setEnginePower(experimentalMove.enginePower);
     move.setWheelTurn(experimentalMove.wheelTurn);
     move.setThrowProjectile(true);
@@ -60,33 +52,49 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
     auto currentState = State(&world);
     auto state = currentState;
     for (int i = 0; i < lookahead; i++) {
-        auto go = moveForTick(world.getTick() + i);
+        auto go = goDebugPhysicsPrediction(world.getTick() + i);
         vector<Go> moves = { go, go, go, go };
         state = state.apply(moves);
     }
-    
-    auto expectedMyCar = getCarById(state, self.getId());
+
+    auto expectedMyCar = state.getCarById(self.getId());
     expectedPosByTick.insert({ world.getTick() + lookahead, expectedMyCar });
 
-    drawPoly(expectedMyCar.getPoints());
+    vis->drawPoly(expectedMyCar.getPoints());
 
     if (280 <= world.getTick() && world.getTick() <= 300) {
         auto currentInfo = expectedPosByTick.find(world.getTick());
-        if (currentInfo != expectedPosByTick.end()) {
-            auto actual = getCarById(currentState, self.getId());
-            auto predicted = currentInfo->second;
-            cout << "tick " << world.getTick() << endl;
-            cout << "  my position " << actual.toString() << endl;
-            cout << "  predicted " << predicted.toString() << endl;
-            cout.precision(8);
-            cout << fixed << "  diff location " << actual.location.distanceTo(predicted.location) <<
-                    " velocity " << (actual.velocity - predicted.velocity).toString() <<
-                    " angle " << abs(actual.angle - predicted.angle) <<
-                    " angular " << abs(actual.angularSpeed - predicted.angularSpeed) <<
-                    " engine " << abs(actual.enginePower - predicted.enginePower) <<
-                    " wheel " << abs(actual.wheelTurn - predicted.wheelTurn) << endl;
-        }
+        if (currentInfo == expectedPosByTick.end()) return;
+
+        auto actual = currentState.getCarById(self.getId());
+        auto predicted = currentInfo->second;
+        cout << "tick " << world.getTick() << endl;
+        cout << "  my position " << actual.toString() << endl;
+        cout << "  predicted " << predicted.toString() << endl;
+        cout << fixed << "  diff location " << actual.location.distanceTo(predicted.location) <<
+        " velocity " << (actual.velocity - predicted.velocity).toString() <<
+        " angle " << abs(actual.angle - predicted.angle) <<
+        " angular " << abs(actual.angularSpeed - predicted.angularSpeed) <<
+        " engine " << abs(actual.enginePower - predicted.enginePower) <<
+        " wheel " << abs(actual.wheelTurn - predicted.wheelTurn) << endl;
     }
+}
+
+// ----
+
+void MyStrategy::move(const Car& self, const World& world, const Game& game, Move& move) {
+    static bool initialized = false;
+    if (!initialized) {
+        initialized = true;
+        initialize(game);
+    }
+
+#ifdef DEBUG_PHYSICS_PREDICTION
+    moveDebugPhysicsPrediction(self, world, game, move);
+    return;
+#endif
+
+    move.setEnginePower(1.0);
 }
 
 MyStrategy::MyStrategy() { }
