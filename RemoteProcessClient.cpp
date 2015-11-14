@@ -15,7 +15,11 @@ RemoteProcessClient::RemoteProcessClient(string host, int port)
         : cachedBoolFlag(false), cachedBoolValue(false), mapName(""), tilesXY(vector<vector<TileType> > ()),
         waypoints(vector<vector<int> > ()), startingDirection(_DIRECTION_COUNT_) {
     do {
+#ifdef WIN32
+        Sleep(50);
+#else
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+#endif
         socket.Initialize();
         socket.DisableNagleAlgoritm();
     } while (!socket.Open((uint8*) host.c_str(), (int16) port));

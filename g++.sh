@@ -27,4 +27,9 @@ do
     files="$files $i"
 done
 
-g++-5 -std=c++11 -fno-optimize-sibling-calls -fno-strict-aliasing -DONLINE_JUDGE -D__APPLE__ -D_DARWIN -x c++ -O2 -Wall -Wno-unknown-pragmas -Wno-unused-but-set-variable -o $name $files
+if [[ `uname -a` == *"MINGW"* ]]
+then
+    g++ -std=c++0x -fno-optimize-sibling-calls -fno-strict-aliasing -DONLINE_JUDGE -DWIN32 -x c++ -O2 -Wall -Wno-unknown-pragmas -Wno-unused-but-set-variable -o $name $files
+else
+    g++-5 -std=c++11 -fno-optimize-sibling-calls -fno-strict-aliasing -DONLINE_JUDGE -D__APPLE__ -D_DARWIN -x c++ -O2 -Wall -Wno-unknown-pragmas -Wno-unused-but-set-variable -o $name $files
+fi

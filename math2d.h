@@ -1,12 +1,12 @@
 #pragma once
 
-#define _USE_MATH_DEFINES
+#ifdef __STRICT_ANSI__
+#undef __STRICT_ANSI__
+#endif
 
 #include <cmath>
-#include <array>
 #include <string>
 
-using std::array;
 using std::abs;
 using std::string;
 

@@ -171,15 +171,14 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
 }
 
 vector<Point> CarPosition::getPoints() const {
-    auto forward = Vec(angle) * (original->getWidth() / 2);
-    auto sideways = Vec(angle + M_PI / 2) * (original->getHeight() / 2);
-    vector<Point> result {
-            location + forward - sideways,
-            location + forward + sideways,
-            location - forward + sideways,
-            location - forward - sideways
+    Vec forward = direction() * (original->getWidth() / 2);
+    Vec sideways = direction().rotate(M_PI / 2) * (original->getHeight() / 2);
+    return {
+        location + forward - sideways,
+        location + forward + sideways,
+        location - forward + sideways,
+        location - forward - sideways
     };
-    return result;
 }
 
 string CarPosition::toString() const {

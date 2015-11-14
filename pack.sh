@@ -9,5 +9,5 @@ do
     files="$files $file"
 done
 
-rm out/solution.zip
+rm -f out/solution.zip
 zip -r out/solution.zip $files
