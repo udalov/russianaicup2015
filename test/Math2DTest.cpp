@@ -78,6 +78,26 @@ TEST_F(Math2DTest, VecAngleTo) {
     EXPECT_DOUBLE_EQ(3 * M_PI / 4, br.angleTo(l));
 }
 
+TEST_F(Math2DTest, VecRotate) {
+    auto ur = Vec { 1.0, 1.0 };
+    auto ul = Vec { -1.0, 1.0 };
+    auto bl = Vec { -1.0, -1.0 };
+    auto br = Vec { 1.0, -1.0 };
+
+    EXPECT_EQ(ul, ur.rotate(M_PI / 2));
+    EXPECT_EQ(bl, ur.rotate(M_PI));
+    EXPECT_EQ(br, ur.rotate(-M_PI / 2));
+    EXPECT_EQ(br, ur.rotate(3 * M_PI / 2));
+
+    EXPECT_EQ(bl, ul.rotate(M_PI / 2));
+    EXPECT_EQ(br, ul.rotate(M_PI));
+    EXPECT_EQ(ur, ul.rotate(-M_PI / 2));
+    EXPECT_EQ(ur, ul.rotate(3 * M_PI / 2));
+
+    EXPECT_EQ(ur, ur.rotate(2 * M_PI));
+    EXPECT_EQ(ul, ul.rotate(2 * M_PI));
+}
+
 TEST_F(Math2DTest, LineContains) {
     auto l = Line { Point { 4., 0. }, Point { 0., 2. } };
     EXPECT_TRUE(l.contains(Point { 4., 0. }));
@@ -90,9 +110,10 @@ TEST_F(Math2DTest, LineContains) {
 TEST_F(Math2DTest, PointArithmetic) {
     auto p = Point { 2.0, -3.0 };
     auto v = Vec { -2.0, 4.0 };
-    auto q = p.shift(v);
+    auto q = p + v;
     EXPECT_EQ((Point { 0.0, 1.0 }), q);
     EXPECT_DOUBLE_EQ(v.length(), p.distanceTo(q));
+    EXPECT_EQ(q, p - (-v));
 }
 
 TEST_F(Math2DTest, SinCos) {

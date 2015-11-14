@@ -46,6 +46,21 @@ Vec Vec::operator-() const {
     return Vec(-x, -y);
 }
 
+void Vec::operator+=(const Vec& other) {
+    x += other.x;
+    y += other.y;
+}
+
+void Vec::operator-=(const Vec& other) {
+    x -= other.x;
+    y -= other.y;
+}
+
+void Vec::operator*=(double coeff) {
+    x *= coeff;
+    y *= coeff;
+}
+
 double Vec::operator*(const Vec& other) const {
     return x * other.x + y * other.y;
 }
@@ -54,8 +69,22 @@ double Vec::operator^(const Vec& other) const {
     return x * other.y - y * other.x;
 }
 
-Point Point::shift(const Vec& direction) const {
+Point Point::operator+(const Vec& direction) const {
     return Point(x + direction.x, y + direction.y);
+}
+
+Point Point::operator-(const Vec& direction) const {
+    return Point(x - direction.x, y - direction.y);
+}
+
+void Point::operator+=(const Vec& direction) {
+    x += direction.x;
+    y += direction.y;
+}
+
+void Point::operator-=(const Vec& direction) {
+    x -= direction.x;
+    y -= direction.y;
 }
 
 double Point::distanceTo(const Point& other) const {
@@ -121,4 +150,10 @@ string Point::toString() const {
     ss.precision(8);
     ss << fixed << "(" << x << ", " << y << ")";
     return ss.str();
+}
+
+Vec Vec::rotate(double alpha) const {
+    auto cos = myCos(alpha);
+    auto sin = mySin(alpha);
+    return Vec(x * cos - y * sin, x * sin + y * cos);
 }

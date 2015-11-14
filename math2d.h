@@ -31,6 +31,8 @@ struct Vec {
     double length() const;
     double angle() const;
     Vec normalize() const;
+    // Positive angle is counter-clockwise, negative is clockwise
+    Vec rotate(double alpha) const;
 
     Vec project(const Vec& other) const;
     double projection(const Vec& other) const;
@@ -42,6 +44,10 @@ struct Vec {
     Vec operator-(const Vec& other) const;
     Vec operator*(double coeff) const;
     Vec operator-() const;
+
+    void operator+=(const Vec& other);
+    void operator-=(const Vec& other);
+    void operator*=(double coeff);
 
     double operator*(const Vec& other) const;
     double operator^(const Vec& other) const;
@@ -60,7 +66,11 @@ struct Point {
         return abs(x - other.x) < eps_equality && abs(y - other.y) < eps_equality;
     }
 
-    Point shift(const Vec& direction) const;
+    Point operator+(const Vec& direction) const;
+    Point operator-(const Vec& direction) const;
+
+    void operator+=(const Vec& direction);
+    void operator-=(const Vec& direction);
 
     double distanceTo(const Point& other) const;
 

@@ -92,17 +92,17 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
 
     // Location
 
-    location = location.shift(velocity * updateFactor);
+    location += velocity * updateFactor;
 
     auto acceleration = enginePower *
             (enginePower < 0 ? game.getBuggyEngineRearPower() : game.getBuggyEngineForwardPower()) /
             game.getBuggyMass();
-    velocity = velocity + direction() * acceleration * updateFactor;
+    velocity += direction() * acceleration * updateFactor;
 
     // Air friction
 
-    auto airFriction = pow(1.0 - game.getCarMovementAirFrictionFactor(), updateFactor);
-    velocity = velocity * airFriction;
+    const double airFriction = pow(1.0 - game.getCarMovementAirFrictionFactor(), updateFactor);
+    velocity *= airFriction;
 
     // Movement friction
 
@@ -152,10 +152,10 @@ vector<Point> CarPosition::getPoints() const {
     auto forward = Vec(angle) * (original->getWidth() / 2);
     auto sideways = Vec(angle + M_PI / 2) * (original->getHeight() / 2);
     vector<Point> result {
-            location.shift(forward - sideways),
-            location.shift(forward + sideways),
-            location.shift(-forward + sideways),
-            location.shift(-forward - sideways)
+            location + forward - sideways,
+            location + forward + sideways,
+            location - forward + sideways,
+            location - forward - sideways
     };
     return result;
 }
