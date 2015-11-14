@@ -25,11 +25,14 @@ struct CarPosition {
     double enginePower;
     double wheelTurn;
     double health;
+    int nitroCharges;
+    int nitroCooldown;
 
     CarPosition(const Car *original, const Point& location, const Vec& velocity, double angle, double angularSpeed,
-                double enginePower, double wheelTurn, double health)
+                double enginePower, double wheelTurn, double health, int nitroCharges, int nitroCooldown)
             : original(original), location(location), velocity(velocity), angle(angle), angularSpeed(angularSpeed),
-              enginePower(enginePower), wheelTurn(wheelTurn), health(health) { }
+              enginePower(enginePower), wheelTurn(wheelTurn), health(health), nitroCharges(nitroCharges),
+              nitroCooldown(nitroCooldown) { }
 
     CarPosition(const Car *car)
             : original(car),
@@ -39,7 +42,9 @@ struct CarPosition {
               angularSpeed(car->getAngularSpeed()),
               enginePower(car->getEnginePower()),
               wheelTurn(car->getWheelTurn()),
-              health(car->getDurability()) { }
+              health(car->getDurability()),
+              nitroCharges(car->getNitroChargeCount()),
+              nitroCooldown(car->getRemainingNitroCooldownTicks()) { }
 
     Vec direction() const { return Vec(angle); }
 

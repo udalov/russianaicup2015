@@ -47,14 +47,32 @@ State State::apply(const vector<Go>& moves) const {
     vector<CarPosition> cars(this->cars);
     vector<double> medianAngularSpeed(cars.size());
     for (unsigned long i = 0, size = cars.size(); i < size; i++) {
-        cars[i].enginePower = updateEnginePower(cars[i].enginePower, moves[i].enginePower);
-        cars[i].wheelTurn = updateWheelTurn(cars[i].wheelTurn, moves[i].wheelTurn);
-        cars[i].angularSpeed =
-                cars[i].wheelTurn * Const::getGame().getCarAngularSpeedFactor() *
-                (cars[i].velocity * cars[i].direction());
+        auto& car = cars[i];
+        auto& move = moves[i];
 
-        medianAngularSpeed[i] = cars[i].angularSpeed;
+        if (move.useNitro && car.nitroCharges > 0 && car.nitroCooldown == 0) {
+            car.nitroCharges--;
+            car.nitroCooldown = Const::getGame().getNitroDurationTicks();
+        }
+
+        if (car.nitroCooldown > 0) {
+            car.nitroCooldown--;
+            car.enginePower = Const::getGame().getNitroEnginePowerFactor();
+        } else {
+            car.enginePower = updateEnginePower(
+                    car.enginePower == Const::getGame().getNitroEnginePowerFactor() ? 1.0 : car.enginePower,
+                    move.enginePower
+            );
+        }
+
+        car.wheelTurn = updateWheelTurn(car.wheelTurn, move.wheelTurn);
+        car.angularSpeed =
+                car.wheelTurn * Const::getGame().getCarAngularSpeedFactor() *
+                (car.velocity * car.direction());
+
+        medianAngularSpeed[i] = car.angularSpeed;
     }
+
     for (int iteration = 1; iteration <= ITERATION_COUNT_PER_STEP; iteration++) {
         for (unsigned long i = 0, size = cars.size(); i < size; i++) {
             cars[i].advance(moves[i], medianAngularSpeed[i], updateFactor);
@@ -172,7 +190,9 @@ string CarPosition::toString() const {
             " angle " << angle <<
             " angular " << angularSpeed <<
             " engine " << enginePower <<
-            " wheel " << wheelTurn;
+            " wheel " << wheelTurn <<
+            " nitros " << nitroCharges <<
+            " nitro cooldown " << nitroCooldown;
     return ss.str();
 }
 

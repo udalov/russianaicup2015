@@ -26,7 +26,9 @@ void initialize(const Game& game) {
 
     Const::getInstance().game = game;
     cout.precision(8);
+    cout << fixed;
     cerr.precision(8);
+    cerr << fixed;
 }
 
 // ---- Debugging physics prediction ----
@@ -70,6 +72,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
     vis->drawPoly(expectedMyCar.getPoints());
 
     if (isPhysicsPredictionOutputNeeded(world.getTick())) {
+        const double eps = 1e-9;
         auto currentInfo = expectedPosByTick.find(world.getTick());
         if (currentInfo == expectedPosByTick.end()) return;
 
@@ -78,12 +81,24 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
         cout << "tick " << world.getTick() << endl;
         cout << "  my position " << actual.toString() << endl;
         cout << "  predicted " << predicted.toString() << endl;
-        cout << fixed << "  diff location " << actual.location.distanceTo(predicted.location) <<
-        " velocity " << (actual.velocity - predicted.velocity).toString() <<
-        " angle " << abs(actual.angle - predicted.angle) <<
-        " angular " << abs(actual.angularSpeed - predicted.angularSpeed) <<
-        " engine " << abs(actual.enginePower - predicted.enginePower) <<
-        " wheel " << abs(actual.wheelTurn - predicted.wheelTurn) << endl;
+        cout << "  diff";
+        auto diffLocation = actual.location.distanceTo(predicted.location);
+        if (abs(diffLocation) > eps) cout << " location " << diffLocation;
+        auto diffVelocity = actual.velocity - predicted.velocity;
+        if (diffVelocity.length() > eps) cout << " velocity " << diffVelocity.toString();
+        auto diffAngle = actual.angle - predicted.angle;
+        if (abs(diffAngle) > eps) cout << " angle " << diffAngle;
+        auto diffAngular = actual.angularSpeed - predicted.angularSpeed;
+        if (abs(diffAngular) > eps) cout << " angular " << diffAngular;
+        auto diffEnginePower = actual.enginePower - predicted.enginePower;
+        if (abs(diffEnginePower) > eps) cout << " engine " << diffEnginePower;
+        auto diffWheelTurn = actual.wheelTurn - predicted.wheelTurn;
+        if (abs(diffWheelTurn) > eps) cout << " wheel " << diffWheelTurn;
+        auto diffNitroCharges = actual.nitroCharges - predicted.nitroCharges;
+        if (abs(diffNitroCharges) > eps) cout << " nitros " << diffNitroCharges;
+        auto diffNitroCooldown = actual.nitroCooldown - predicted.nitroCooldown;
+        if (abs(diffNitroCooldown) > eps) cout << " nitro cooldown " << diffNitroCooldown;
+        cout << endl;
     }
 }
 
