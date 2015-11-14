@@ -34,6 +34,9 @@ public class LocalServer {
                     while (true) {
                         String string;
                         try {
+                            while (inputStream.available() == 0) {
+                                Thread.sleep(15);
+                            }
                             string = inputStream.readUTF();
                         } catch (Exception e) {
                             warn("could not receive message: " + e.getMessage() + " (" + e.getClass().getName() + ")");
@@ -45,18 +48,6 @@ public class LocalServer {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            }
-
-            private byte[] readBytes(int byteCount, InputStream inputStream) throws IOException {
-                byte[] bytes = new byte[byteCount];
-                int offset = 0;
-                int readByteCount;
-
-                while (offset < byteCount && (readByteCount = inputStream.read(bytes, offset, byteCount - offset)) != -1) {
-                    offset += readByteCount;
-                }
-
-                return bytes;
             }
         }).start();
     }
