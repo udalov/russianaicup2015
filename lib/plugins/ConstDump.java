@@ -9,7 +9,7 @@ public class ConstDump {
     private static boolean done = false;
 
     private static Set<String> skipFields = new HashSet<>(Arrays.asList(
-            "class", "tickCount", "worldHeight", "worldWidth"
+            "class", "tickCount", "lapTickCount", "worldHeight", "worldWidth"
     ));
 
     public static void run(Game game) {

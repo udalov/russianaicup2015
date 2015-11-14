@@ -24,7 +24,6 @@ jeepEngineForwardPower 375.000000000000
 jeepEngineRearPower 281.250000000000
 jeepMass 1500.000000000000
 lapCount 4
-lapTickCount 1290
 lapWaypointsSummaryScoreFactor 0.500000000000
 maxOiledStateDurationTicks 60
 nitroDurationTicks 120
