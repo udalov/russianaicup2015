@@ -38,6 +38,10 @@ Go goDebugPhysicsPrediction(int tick) {
     return Go(1.0, 0.0);
 };
 
+bool isPhysicsPredictionOutputNeeded(int tick) {
+    return 280 <= tick && tick <= 305;
+}
+
 void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game& game, Move& move) {
     // This map is not entirely safe, one should not dereference originals of cars there
     static unordered_map<int, CarPosition> expectedPosByTick;
@@ -45,8 +49,10 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
     auto experimentalMove = goDebugPhysicsPrediction(world.getTick());
     move.setEnginePower(experimentalMove.enginePower);
     move.setWheelTurn(experimentalMove.wheelTurn);
-    move.setThrowProjectile(true);
-    move.setSpillOil(true);
+    move.setBrake(experimentalMove.brake);
+    move.setThrowProjectile(experimentalMove.throwProjectile);
+    move.setUseNitro(experimentalMove.useNitro);
+    move.setSpillOil(experimentalMove.spillOil);
 
     const int lookahead = 1;
 
@@ -63,7 +69,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
 
     vis->drawPoly(expectedMyCar.getPoints());
 
-    if (280 <= world.getTick() && world.getTick() <= 300) {
+    if (isPhysicsPredictionOutputNeeded(world.getTick())) {
         auto currentInfo = expectedPosByTick.find(world.getTick());
         if (currentInfo == expectedPosByTick.end()) return;
 

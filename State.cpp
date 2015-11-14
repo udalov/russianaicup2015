@@ -94,10 +94,12 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
 
     location += velocity * updateFactor;
 
-    auto acceleration = enginePower *
-            (enginePower < 0 ? game.getBuggyEngineRearPower() : game.getBuggyEngineForwardPower()) /
-            game.getBuggyMass();
-    velocity += direction() * acceleration * updateFactor;
+    if (!move.brake) {
+        auto acceleration = enginePower *
+                            (enginePower < 0 ? game.getBuggyEngineRearPower() : game.getBuggyEngineForwardPower()) /
+                            game.getBuggyMass();
+        velocity += direction() * acceleration * updateFactor;
+    }
 
     // Air friction
 
@@ -106,7 +108,9 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
 
     // Movement friction
 
-    const double lengthwiseVelocityChange = game.getCarLengthwiseMovementFrictionFactor() * updateFactor;
+    const double lengthwiseVelocityChange =
+            (move.brake ? game.getCarCrosswiseMovementFrictionFactor() : game.getCarLengthwiseMovementFrictionFactor())
+            * updateFactor;
     auto lengthwiseUnitVector = direction();
     auto lengthwiseVelocityPart = velocity * lengthwiseUnitVector;
     lengthwiseVelocityPart =
