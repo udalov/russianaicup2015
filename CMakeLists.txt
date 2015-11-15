@@ -35,7 +35,7 @@ add_library(russianaicup
 add_subdirectory(test)
 
 add_executable(Runner runner-main.cpp)
-add_executable(my-main main.cpp)
+add_executable(LocalRunner main.cpp)
 
 target_link_libraries(Runner russianaicup)
-target_link_libraries(my-main russianaicup)
+target_link_libraries(LocalRunner russianaicup)
