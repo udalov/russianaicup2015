@@ -1,10 +1,11 @@
 #include "Runner.h"
 
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <thread>
 
-using std::string;
+using namespace std;
 
 string javaHome = "/Library/Java/JavaVirtualMachines/jdk1.8.0_60.jdk/Contents/Home";
 
@@ -12,9 +13,13 @@ void runLocalRunner(bool vis) {
     string command = javaHome + "/bin/java -jar lib/local-runner.jar ";
     if (vis) command += "lib/local-runner.properties";
     else command += "lib/local-runner-console.properties";
-    std::system(command.c_str());
+    system(command.c_str());
 
-    std::system("cat out/result.txt");
+    ifstream in("out/result.txt");
+    string line;
+    while (getline(in, line)) {
+        cout << line << endl;
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -25,7 +30,7 @@ int main(int argc, char *argv[]) {
         vis |= string("-vis") == argv[i];
     }
 
-    auto localRunner = std::thread(runLocalRunner, vis);
+    auto localRunner = thread(runLocalRunner, vis);
 
     Runner runner("127.0.0.1", "31001", "0000000000000000");
     runner.run();
