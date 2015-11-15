@@ -50,7 +50,7 @@ struct CarPosition {
 
     void advance(const Go& move, double medianAngularSpeed, double updateFactor);
 
-    vector<Point> getPoints() const;
+    Rectangle rectangle() const;
 
     string toString() const;
 };
@@ -94,6 +94,9 @@ struct State {
     State(const World *original, const vector<CarPosition>& cars, const vector<OilSlickPosition>& oilSlicks,
           const vector<WasherPosition>& washers)
             : original(original), cars(cars), oilSlicks(oilSlicks), washers(washers) { }
+
+    State(const State& other) : original(other.original), cars(other.cars), oilSlicks(other.oilSlicks),
+                                washers(other.washers) { }
 
     State(const World *world);
 

@@ -17,5 +17,7 @@ struct VisClient {
     void send(const string& message);
 
     void drawLine(const Point& first, const Point& second);
+    void drawRect(const Rectangle& rectangle);
     void drawPoly(const vector<Point>& points);
+    void drawCircle(const Point& center, double radius);
 };

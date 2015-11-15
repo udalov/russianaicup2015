@@ -57,6 +57,8 @@ public final class LocalTestRendererListener {
             case "line":
                 drawLine(args[0], args[1], args[2], args[3]);
                 break;
+            case "circle":
+                drawCircle(args[0], args[1], args[2]);
             default:
                 log("unknown message: " + message);
                 break;

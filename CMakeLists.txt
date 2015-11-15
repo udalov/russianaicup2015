@@ -29,6 +29,7 @@ add_library(russianaicup
         Go.cpp
         VisClient.cpp
         Const.cpp
+        Map.cpp
         )
 
 add_subdirectory(test)

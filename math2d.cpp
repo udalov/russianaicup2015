@@ -92,7 +92,7 @@ double Point::distanceTo(const Point& other) const {
 }
 
 bool Line::contains(const Point& point) const {
-    return abs(a * point.x + b * point.y - c) < eps_line_contains;
+    return abs(a * point.x + b * point.y - c) < eps_contains;
 }
 
 Point Line::project(const Point& point) const {
@@ -156,4 +156,33 @@ Vec Vec::rotate(double alpha) const {
     auto cos = myCos(alpha);
     auto sin = mySin(alpha);
     return Vec(x * cos - y * sin, x * sin + y * cos);
+}
+
+bool Segment::contains(const Point& point) const {
+    return min(p1.x, p2.x) <= point.x + eps_contains && point.x <= max(p1.x, p2.x) + eps_contains &&
+           min(p1.y, p2.y) <= point.y + eps_contains && point.y <= max(p1.y, p2.y) + eps_contains &&
+           abs((point.x - p1.x) * (p2.y - p1.y) - (point.y - p1.y) * (p2.x - p1.x)) < eps_contains;
+}
+
+bool Segment::intersects(const Rectangle& rect) const {
+    for (auto it = rect.points.begin(); it != rect.points.end(); ++it) {
+        if (intersects(Segment(*it, it + 1 == rect.points.end() ? rect.points.front() : *(it + 1)))) return true;
+    }
+    return false;
+}
+
+bool Segment::intersects(const Segment& other) const {
+    // TODO: optimize
+    auto l1 = Line(p1, p2);
+    auto l2 = Line(other.p1, other.p2);
+    Point p;
+    return l1.intersect(l2, p) && contains(p) && other.contains(p);
+}
+
+bool Line::intersect(const Line& other, Point& result) const {
+    double d = a * other.b - other.a * b;
+    if (abs(d) < eps_intersects) return false;
+    result.x = (c * other.b - other.c * b) / d;
+    result.y = (a * other.c - other.a * c) / d;
+    return true;
 }

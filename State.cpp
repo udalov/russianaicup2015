@@ -1,5 +1,6 @@
 #include "State.h"
 #include "Const.h"
+#include "Map.h"
 
 #include <algorithm>
 #include <sstream>
@@ -13,8 +14,12 @@ const double EPSILON = 1e-7;
 State::State(const World *world) : original(world) {
     auto& cars = world->getCars();
     this->cars.reserve(cars.size());
-    for (unsigned long i = 0, size = cars.size(); i < size; i++) {
-        this->cars.push_back(CarPosition(&cars[i]));
+    for (bool teammates : { true, false }) {
+        for (unsigned long i = 0, size = cars.size(); i < size; i++) {
+            if (teammates == (world->getMyPlayer().getId() == cars[i].getPlayerId())) {
+                this->cars.push_back(CarPosition(&cars[i]));
+            }
+        }
     }
 
     auto& oilSlicks = world->getOilSlicks();
@@ -41,12 +46,48 @@ double updateWheelTurn(double carWheelTurn, double moveWheelTurn) {
     return carWheelTurn + min(max(delta, -maxChange), maxChange);
 }
 
+bool hitsTheWall(const CarPosition& car) {
+    auto& game = Const::getGame();
+    auto& map = Map::getMap();
+    const double margin = game.getTrackTileMargin();
+    const double tileSize = game.getTrackTileSize();
+
+    static const int dx[] = {1, 0, -1, 0};
+    static const int dy[] = {0, 1, 0, -1};
+
+    auto rect = car.rectangle();
+
+    auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
+    auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
+    for (auto tx = tileX; tx <= min(tileX + 1, map.width - 1); tx++) {
+        for (auto ty = tileY; ty <= min(tileY + 1, map.height - 1); ty++) {
+            auto tile = map.graph[tx][ty];
+            for (int d = 0; d < 4; d++) {
+                if (tile & (1 << d)) continue;
+                auto p1 = Point(
+                        (tx + max(dx[d] + dy[d], 0)) * tileSize - dx[d] * margin,
+                        (ty + max(dy[d] - dx[d], 0)) * tileSize - dy[d] * margin
+                );
+                auto p2 = Point(
+                        (tx + max(dx[d] - dy[d], 0)) * tileSize - dx[d] * margin,
+                        (ty + max(dx[d] + dy[d], 0)) * tileSize - dy[d] * margin
+                );
+                if (Segment(p1, p2).intersects(rect)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 State State::apply(const vector<Go>& moves) const {
     const double updateFactor = 1.0 / ITERATION_COUNT_PER_STEP;
 
     vector<CarPosition> cars(this->cars);
     vector<double> medianAngularSpeed(cars.size());
-    for (unsigned long i = 0, size = cars.size(); i < size; i++) {
+    for (unsigned long i = 0, size = 1/*cars.size()*/ /* TODO: advance all cars */; i < size; i++) {
         auto& car = cars[i];
         auto& move = moves[i];
 
@@ -77,6 +118,11 @@ State State::apply(const vector<Go>& moves) const {
         for (unsigned long i = 0, size = cars.size(); i < size; i++) {
             cars[i].advance(moves[i], medianAngularSpeed[i], updateFactor);
         }
+    }
+
+    // TODO: this is temporary
+    if (hitsTheWall(cars.front())) {
+        cars.front().health = 0.0;
     }
 
     vector<OilSlickPosition> oilSlicks;
@@ -170,15 +216,15 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
     angularSpeed += medianAngularSpeed;
 }
 
-vector<Point> CarPosition::getPoints() const {
+Rectangle CarPosition::rectangle() const {
     Vec forward = direction() * (original->getWidth() / 2);
     Vec sideways = direction().rotate(M_PI / 2) * (original->getHeight() / 2);
-    return {
+    return Rectangle({
         location + forward - sideways,
         location + forward + sideways,
         location - forward + sideways,
         location - forward - sideways
-    };
+    });
 }
 
 string CarPosition::toString() const {
@@ -190,8 +236,9 @@ string CarPosition::toString() const {
             " angular " << angularSpeed <<
             " engine " << enginePower <<
             " wheel " << wheelTurn <<
+            " health " << health <<
             " nitros " << nitroCharges <<
-            " nitro cooldown " << nitroCooldown;
+            " nitro-cooldown " << nitroCooldown;
     return ss.str();
 }
 

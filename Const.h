@@ -4,10 +4,9 @@
 
 using model::Game;
 
-struct Const {
+class Const {
+public:
     Game game;
-
-    Const() { }
 
     static Const& getInstance() {
         static Const instance;
@@ -17,4 +16,9 @@ struct Const {
     static Game& getGame() {
         return getInstance().game;
     }
+
+private:
+    Const() { }
+    Const(const Const& other) = delete;
+    Const *operator=(const Const& other) = delete;
 };

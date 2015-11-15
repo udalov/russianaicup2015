@@ -60,7 +60,7 @@ VisClient::VisClient(int port) {
 
 void VisClient::drawLine(const Point& first, const Point& second) {
     ostringstream ss;
-    ss << "line " << first.x << " " << first.y << " " << second.x << " " << second.y << endl;
+    ss << "line " << first.x << " " << first.y << " " << second.x << " " << second.y;
     send(ss.str());
 }
 
@@ -68,4 +68,14 @@ void VisClient::drawPoly(const vector<Point>& points) {
     for (auto i = 0UL; i < points.size(); i++) {
         drawLine(points[i], points[i + 1 == points.size() ? 0 : i + 1]);
     }
+}
+
+void VisClient::drawRect(const Rectangle& rectangle) {
+    drawPoly(rectangle.points);
+}
+
+void VisClient::drawCircle(const Point& center, double radius) {
+    ostringstream ss;
+    ss << "circle " << center.x << " " << center.y << " " << radius;
+    send(ss.str());
 }

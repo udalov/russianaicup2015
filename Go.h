@@ -1,5 +1,9 @@
 #pragma once
 
+#include <string>
+
+using std::string;
+
 struct Go {
     double enginePower;
     double wheelTurn;
@@ -17,4 +21,6 @@ struct Go {
        bool spillOil = false)
             : enginePower(enginePower), wheelTurn(wheelTurn), brake(brake), throwProjectile(throwProjectile),
               useNitro(useNitro), spillOil(spillOil) { }
+
+    string toString() const;
 };

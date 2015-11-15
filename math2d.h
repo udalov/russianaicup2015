@@ -6,12 +6,17 @@
 
 #include <cmath>
 #include <string>
+#include <vector>
 
 using std::abs;
 using std::string;
+using std::vector;
 
-const double eps_line_contains = 1e-6;
+const double eps_contains = 1e-6;
 const double eps_equality = 1e-9;
+const double eps_intersects = 1e-9;
+
+struct Rectangle;
 
 double mySin(double x);
 double myCos(double y);
@@ -59,6 +64,7 @@ struct Point {
     double x;
     double y;
 
+    Point() : x(0.0), y(0.0) { }
     Point(double x, double y) : x(x), y(y) { }
     Point(const Point& other) : x(other.x), y(other.y) { }
 
@@ -91,6 +97,31 @@ struct Line {
     bool contains(const Point& point) const;
 
     Point project(const Point& point) const;
+
+    // TODO (!): test
+    bool intersect(const Line& other, Point& result) const;
+};
+
+struct Segment {
+    Point p1;
+    Point p2;
+
+    Segment(const Point& p1, const Point& p2) : p1(p1), p2(p2) { }
+    Segment(const Segment& other) : p1(other.p1), p2(other.p2) { }
+
+    // TODO: test
+    bool contains(const Point& point) const;
+
+    bool intersects(const Rectangle& rect) const;
+    // TODO: test
+    bool intersects(const Segment& other) const;
+};
+
+struct Rectangle {
+    vector<Point> points;
+
+    Rectangle(const vector<Point>& points) : points(points) { }
+    Rectangle(const Rectangle& other) : points(other.points) { }
 };
 
 double myHypot(double x, double y);
