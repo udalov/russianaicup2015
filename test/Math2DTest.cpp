@@ -7,6 +7,10 @@ using namespace std;
 class Math2DTest : public ::testing::Test {
 };
 
+Segment inverse(const Segment& segment) {
+    return Segment(segment.p2, segment.p1);
+}
+
 TEST_F(Math2DTest, VecLength) {
     EXPECT_EQ(5.0, Vec(3.0, 4.0).length());
 }
@@ -114,6 +118,62 @@ TEST_F(Math2DTest, PointArithmetic) {
     EXPECT_EQ((Point { 0.0, 1.0 }), q);
     EXPECT_DOUBLE_EQ(v.length(), p.distanceTo(q));
     EXPECT_EQ(q, p - (-v));
+}
+
+TEST_F(Math2DTest, SegmentContains) {
+    auto segment = Segment { 1., 3., 4., 0. };
+    for (auto s : { segment, inverse(segment) }) {
+        EXPECT_TRUE(s.contains(s.p1));
+        EXPECT_TRUE(s.contains(s.p2));
+        EXPECT_TRUE(s.contains(Point { 3., 1. }));
+        EXPECT_FALSE(s.contains(Point { 0., 0. }));
+        EXPECT_FALSE(s.contains(Point { 0., 4. }));
+        EXPECT_FALSE(s.contains(Point { 5., -1. }));
+    }
+}
+
+TEST_F(Math2DTest, SegmentIntersects) {
+#define EXPECT_INTERSECTS(s1, s2) do {                  \
+    EXPECT_TRUE(s1.intersects(s2));                     \
+    EXPECT_TRUE(inverse(s1).intersects(s2));            \
+    EXPECT_TRUE(s1.intersects(inverse(s2)));            \
+    EXPECT_TRUE(inverse(s1).intersects(inverse(s2)));   \
+    EXPECT_TRUE(s2.intersects(s1));                     \
+    EXPECT_TRUE(inverse(s2).intersects(s1));            \
+    EXPECT_TRUE(s2.intersects(inverse(s1)));            \
+    EXPECT_TRUE(inverse(s2).intersects(inverse(s1)));   \
+} while (false)
+#define EXPECT_DOES_NOT_INTERSECT(s1, s2) do {          \
+    EXPECT_FALSE(s1.intersects(s2));                    \
+    EXPECT_FALSE(inverse(s1).intersects(s2));           \
+    EXPECT_FALSE(s1.intersects(inverse(s2)));           \
+    EXPECT_FALSE(inverse(s1).intersects(inverse(s2)));  \
+    EXPECT_FALSE(s2.intersects(s1));                    \
+    EXPECT_FALSE(inverse(s2).intersects(s1));           \
+    EXPECT_FALSE(s2.intersects(inverse(s1)));           \
+    EXPECT_FALSE(inverse(s2).intersects(inverse(s1)));  \
+} while (false)
+
+    EXPECT_INTERSECTS(Segment(-1., 0., 1., 0.), Segment(0., -1., 0., 1.));
+    EXPECT_INTERSECTS(Segment(0., 0., 5., 5.), Segment(0., 5., 5., 0.));
+    EXPECT_INTERSECTS(Segment(1., 0., 2., 4.), Segment(0., 5., 4., 2.));
+    EXPECT_INTERSECTS(Segment(1., 0., 2., 4.), Segment(0., 5., 4., 3.));
+    EXPECT_DOES_NOT_INTERSECT(Segment(1., 0., 2., 4.), Segment(0., 5., 4., 4.));
+    EXPECT_DOES_NOT_INTERSECT(Segment(-1., 0., 4., 0.), Segment(0., -1., 0., -4.));
+
+    // TODO
+    // EXPECT_INTERSECTS(Segment(0., 0., 3., 0.), Segment(3., 0., 6., 0.));
+
+#undef EXPECT_INTERSECTS
+#undef EXPECT_DOES_NOT_INTERSECT
+}
+
+TEST_F(Math2DTest, LineIntersects) {
+    auto l1 = Line(Point(1., 1.), Point(2., 2.));
+    auto l2 = Line(Point(-1., 1.), Point(1., -1.));
+    Point result;
+    EXPECT_TRUE(l1.intersect(l2, result));
+    EXPECT_EQ(Point(0., 0.), result);
 }
 
 TEST_F(Math2DTest, SinCos) {

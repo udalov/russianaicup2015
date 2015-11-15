@@ -96,7 +96,6 @@ struct Line {
 
     Point project(const Point& point) const;
 
-    // TODO (!): test
     bool intersect(const Line& other, Point& result) const;
 };
 
@@ -111,14 +110,14 @@ struct Segment {
     Point p1;
     Point p2;
 
+    Segment(double x1, double y1, double x2, double y2) : p1(x1, y1), p2(x2, y2) { }
     Segment(const Point& p1, const Point& p2) : p1(p1), p2(p2) { }
     Segment(const Segment& other) : p1(other.p1), p2(other.p2) { }
 
-    // TODO: test
     bool contains(const Point& point) const;
 
+    bool intersects(const Point& q1, const Point& q2) const;
     bool intersects(const Rect& rect) const;
-    // TODO: test
     bool intersects(const Segment& other) const;
 };
 

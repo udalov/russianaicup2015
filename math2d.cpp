@@ -158,25 +158,38 @@ Vec Vec::rotate(double alpha) const {
     return Vec(x * cos - y * sin, x * sin + y * cos);
 }
 
+bool segmentContainsPoint(double x1, double y1, double x2, double y2, double x, double y) {
+    return min(x1, x2) < x + eps_contains && x < max(x1, x2) + eps_contains &&
+           min(y1, y2) < y + eps_contains && y < max(y1, y2) + eps_contains &&
+           abs((x - x1) * (y2 - y1) - (y - y1) * (x2 - x1)) < eps_contains;
+}
+
 bool Segment::contains(const Point& point) const {
-    return min(p1.x, p2.x) <= point.x + eps_contains && point.x <= max(p1.x, p2.x) + eps_contains &&
-           min(p1.y, p2.y) <= point.y + eps_contains && point.y <= max(p1.y, p2.y) + eps_contains &&
-           abs((point.x - p1.x) * (p2.y - p1.y) - (point.y - p1.y) * (p2.x - p1.x)) < eps_contains;
+    return segmentContainsPoint(p1.x, p1.y, p2.x, p2.y, point.x, point.y);
 }
 
 bool Segment::intersects(const Rect& rect) const {
-    for (auto it = rect.points.begin(); it != rect.points.end(); ++it) {
-        if (intersects(Segment(*it, it + 1 == rect.points.end() ? rect.points.front() : *(it + 1)))) return true;
+    auto& points = rect.points;
+    for (unsigned long i = 0, size = points.size(); i < size; i++) {
+        if (intersects(points[i], points[i + 1 == size ? 0 : i + 1])) return true;
     }
     return false;
 }
 
 bool Segment::intersects(const Segment& other) const {
+    return intersects(other.p1, other.p2);
+}
+
+bool Segment::intersects(const Point& q1, const Point& q2) const {
+    if (min(q1.x, q2.x) > max(p1.x, p2.x) + eps_intersects ||
+        min(p1.x, p2.x) > max(q1.x, q2.x) + eps_intersects ||
+        min(q1.y, q2.y) > max(p1.y, p2.y) + eps_intersects ||
+        min(p1.y, p2.y) > max(q1.y, q2.y) + eps_intersects) return false;
     // TODO: optimize
     auto l1 = Line(p1, p2);
-    auto l2 = Line(other.p1, other.p2);
+    auto l2 = Line(q1, q2);
     Point p;
-    return l1.intersect(l2, p) && contains(p) && other.contains(p);
+    return l1.intersect(l2, p) && contains(p) && segmentContainsPoint(q1.x, q1.y, q2.x, q2.y, p.x, p.y);
 }
 
 bool Line::intersect(const Line& other, Point& result) const {
