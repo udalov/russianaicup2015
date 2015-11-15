@@ -76,6 +76,18 @@ bool hitsTheWall(const CarPosition& car) {
                     return true;
                 }
             }
+
+            for (int d = 0; d < 4; d++) {
+                if ((tile & (1 << d)) && (tile & (1 << ((d + 1) & 3)))) {
+                    auto p = Point(
+                            (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
+                            (ty + (dx[d] + dy[d] + 1.) / 2) * tileSize
+                    );
+                    if (rect.distanceFrom(p) < margin + EPSILON) {
+                        return true;
+                    }
+                }
+            }
         }
     }
 

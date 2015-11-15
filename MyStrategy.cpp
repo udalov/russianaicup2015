@@ -126,6 +126,43 @@ void drawMap() {
 
 // ----
 
+// ---- Waypoint indices ----
+
+unordered_map<long long, unsigned long> nextWaypointIndex;
+
+void updateWaypointIndices(const World& world) {
+    auto& waypoints = world.getWaypoints();
+
+    if (nextWaypointIndex.empty()) {
+        for (auto& car : world.getCars()) {
+            for (unsigned long i = 0, size = waypoints.size(); i < size; i++) {
+                if (waypoints[i][0] == car.getNextWaypointX() && waypoints[i][1] == car.getNextWaypointY()) {
+                    nextWaypointIndex[car.getId()] = i;
+                    break;
+                }
+            }
+            if (nextWaypointIndex.find(car.getId()) == nextWaypointIndex.end()) {
+                nextWaypointIndex[car.getId()] = 0;
+                cerr << "next waypoint index not found for car " << car.getId() << endl;
+            }
+        }
+        return;
+    }
+
+    for (auto& car : world.getCars()) {
+        auto& i = nextWaypointIndex[car.getId()];
+        if (waypoints[i][0] != car.getNextWaypointX() || waypoints[i][1] != car.getNextWaypointY()) {
+            i = (i + 1) % waypoints.size();
+        }
+    }
+}
+
+unsigned long getNextWaypointIndex(const Car& car) {
+    return nextWaypointIndex[car.getId()];
+}
+
+// ----
+
 pair<int, int> findCurrentTile(const Car& self) {
     auto& map = Map::getMap();
     auto& game = Const::getGame();
@@ -151,6 +188,8 @@ pair<int, int> nextTileToReachWaypoint(int x, int y, int wx, int wy) {
     static const int dx[] = {1, 0, -1, 0};
     static const int dy[] = {0, 1, 0, -1};
     auto& map = Map::getMap();
+
+    if (x == wx && y == wy) return make_pair(x, y);
     
     vector<int> q;
     unordered_map<int, int> prev;
@@ -227,12 +266,26 @@ Go experimentalBruteForce(const World& world, const Point& nextWaypoint) {
     return best;
 }
 
-Point computeNextWaypoint(const Car& self, const Game& game) {
+Point computeNextWaypoint(const Car& self, const World& world, const Game& game) {
+    auto& waypoints = world.getWaypoints();
+    for (unsigned long i = 0, size = waypoints.size(); i < size; i++) {
+        vis->drawText(Point(
+                waypoints[i][0] * game.getTrackTileSize() + 20.0,
+                waypoints[i][1] * game.getTrackTileSize() + 120.0
+        ), string("#") + to_string(i));
+    }
+
     auto curTile = findCurrentTile(self);
+    auto nextWaypoint = make_pair(self.getNextWaypointX(), self.getNextWaypointY());
     auto nextTile =
-            nextTileToReachWaypoint(curTile.first, curTile.second, self.getNextWaypointX(), self.getNextWaypointY());
+            nextTileToReachWaypoint(curTile.first, curTile.second, nextWaypoint.first, nextWaypoint.second);
+    if (nextTile == nextWaypoint) {
+        unsigned long j = getNextWaypointIndex(self);
+        j = (j + 1) % waypoints.size();
+        nextWaypoint = make_pair(waypoints[j][0], waypoints[j][1]);
+    }
     nextTile =
-            nextTileToReachWaypoint(nextTile.first, nextTile.second, self.getNextWaypointX(), self.getNextWaypointY());
+            nextTileToReachWaypoint(nextTile.first, nextTile.second, nextWaypoint.first, nextWaypoint.second);
     return Point(
             (nextTile.first + 0.5) * game.getTrackTileSize(),
             (nextTile.second + 0.5) * game.getTrackTileSize()
@@ -245,6 +298,8 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         initialized = true;
         initialize(game);
     }
+
+    updateWaypointIndices(world);
 
     auto& map = Map::getMap();
     map.update(world);
@@ -259,7 +314,7 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         return;
     }
 
-    Point nextWaypoint = computeNextWaypoint(self, game);
+    Point nextWaypoint = computeNextWaypoint(self, world, game);
 
     vis->drawCircle(nextWaypoint, 100);
     vis->drawCircle(nextWaypoint, 150);

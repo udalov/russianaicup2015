@@ -41,24 +41,28 @@ public final class LocalTestRendererListener {
         String[] command = message.split(" ");
         if (command.length == 0) return;
 
-        double[] args = new double[command.length - 1];
+        Object[] args = new Object[command.length - 1];
         for (int i = 0; i < command.length - 1; i++) {
             try {
                 args[i] = Double.valueOf(command[i + 1]);
             } catch (NumberFormatException e) {
-                return;
+                args[i] = command[i + 1];
             }
         }
 
         switch (command[0]) {
             case "rect":
-                drawRect(args[0], args[1], args[2], args[3]);
+                drawRect((double) args[0], (double) args[1], (double) args[2], (double) args[3]);
                 break;
             case "line":
-                drawLine(args[0], args[1], args[2], args[3]);
+                drawLine((double) args[0], (double) args[1], (double) args[2], (double) args[3]);
                 break;
             case "circle":
-                drawCircle(args[0], args[1], args[2]);
+                drawCircle((double) args[0], (double) args[1], (double) args[2]);
+                break;
+            case "text":
+                drawText((double) args[0], (double) args[1], (String) args[2]);
+                break;
             default:
                 log("unknown message: " + message);
                 break;
@@ -132,6 +136,13 @@ public final class LocalTestRendererListener {
         Point2I size = toCanvasOffset(width, height);
 
         graphics.drawRect(topLeft.x, topLeft.y, size.x, size.y);
+    }
+
+    private void drawText(double x, double y, String text) {
+        Point2I point = toCanvasPosition(x, y);
+
+        graphics.setFont(new Font("Tahoma", Font.BOLD, 12));
+        graphics.drawString(text, point.x, point.y);
     }
 
     private void drawPolygon(Point2D... points) {

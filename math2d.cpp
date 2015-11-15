@@ -166,10 +166,29 @@ Vec Vec::rotate(double alpha) const {
     return Vec(x * cos - y * sin, x * sin + y * cos);
 }
 
-bool segmentContainsPoint(double x1, double y1, double x2, double y2, double x, double y) {
+bool withinAABB(double x1, double y1, double x2, double y2, double x, double y) {
     return min(x1, x2) < x + eps_contains && x < max(x1, x2) + eps_contains &&
-           min(y1, y2) < y + eps_contains && y < max(y1, y2) + eps_contains &&
+           min(y1, y2) < y + eps_contains && y < max(y1, y2) + eps_contains;
+}
+
+bool segmentContainsPoint(double x1, double y1, double x2, double y2, double x, double y) {
+    return withinAABB(x1, y1, x2, y2, x, y) &&
            abs((x - x1) * (y2 - y1) - (y - y1) * (x2 - x1)) < eps_contains;
+}
+
+double Rect::distanceFrom(const Point& point) const {
+    double result = 1e100;
+    for (unsigned long i = 0, size = points.size(); i < size; i++) {
+        result = min(result, Segment(points[i], points[i + 1 == size ? 0 : i + 1]).distanceFrom(point));
+    }
+    return result;
+}
+
+double Segment::distanceFrom(const Point& point) const {
+    auto line = Line(p1, p2);
+    auto projection = line.project(point);
+    if (withinAABB(p1.x, p1.y, p2.x, p2.y, projection.x, projection.y)) return point.distanceTo(projection);
+    return min(point.distanceTo(p1), point.distanceTo(p2));
 }
 
 bool Segment::contains(const Point& point) const {
