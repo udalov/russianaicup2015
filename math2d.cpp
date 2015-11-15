@@ -91,6 +91,14 @@ double Point::distanceTo(const Point& other) const {
     return myHypot(x - other.x, y - other.y);
 }
 
+double Line::signedDistanceFrom(const Point& point) const {
+    return (a * point.x + b * point.y - c) / myHypot(a, b);
+}
+
+double Line::distanceFrom(const Point& point) const {
+    return abs(a * point.x + b * point.y - c) / myHypot(a, b);
+}
+
 bool Line::contains(const Point& point) const {
     return abs(a * point.x + b * point.y - c) < eps_contains;
 }

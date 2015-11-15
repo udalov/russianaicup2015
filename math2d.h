@@ -92,6 +92,9 @@ struct Line {
             b(p2.x - p1.x),
             c(a * p1.x + b * p1.y) { }
 
+    double distanceFrom(const Point& point) const;
+    double signedDistanceFrom(const Point& point) const;
+
     bool contains(const Point& point) const;
 
     Point project(const Point& point) const;

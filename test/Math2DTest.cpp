@@ -102,6 +102,18 @@ TEST_F(Math2DTest, VecRotate) {
     EXPECT_EQ(ul, ul.rotate(2 * M_PI));
 }
 
+TEST_F(Math2DTest, LineDistanceFrom) {
+    auto l = Line { Point { 3., 0. }, Point { 0., 4. } };
+    EXPECT_DOUBLE_EQ(2.4, l.distanceFrom(Point(0., 0.)));
+    EXPECT_DOUBLE_EQ(2.4, l.distanceFrom(Point(3., 4.)));
+    EXPECT_DOUBLE_EQ(0.0, l.distanceFrom(Point(3., 0.)));
+    EXPECT_DOUBLE_EQ(0.0, l.distanceFrom(Point(0., 4.)));
+    EXPECT_DOUBLE_EQ(2.4, l.signedDistanceFrom(Point(0., 0.)));
+    EXPECT_DOUBLE_EQ(-2.4, l.signedDistanceFrom(Point(3., 4.)));
+    EXPECT_DOUBLE_EQ(0.0, l.signedDistanceFrom(Point(3., 0.)));
+    EXPECT_DOUBLE_EQ(0.0, l.signedDistanceFrom(Point(0., 4.)));
+}
+
 TEST_F(Math2DTest, LineContains) {
     auto l = Line { Point { 4., 0. }, Point { 0., 2. } };
     EXPECT_TRUE(l.contains(Point { 4., 0. }));
