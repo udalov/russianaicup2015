@@ -96,10 +96,12 @@ bool hitsTheWall(const CarPosition& car) {
 
 State State::apply(const vector<Go>& moves) const {
     const double updateFactor = 1.0 / ITERATION_COUNT_PER_STEP;
+    // TODO: simulate all cars
+    const bool simulateAllCars = false;
 
     vector<CarPosition> cars(this->cars);
     vector<double> medianAngularSpeed(cars.size());
-    for (unsigned long i = 0, size = 1/*cars.size()*/ /* TODO: advance all cars */; i < size; i++) {
+    for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
         auto& car = cars[i];
         auto& move = moves[i];
 
@@ -127,7 +129,7 @@ State State::apply(const vector<Go>& moves) const {
     }
 
     for (int iteration = 1; iteration <= ITERATION_COUNT_PER_STEP; iteration++) {
-        for (unsigned long i = 0, size = cars.size(); i < size; i++) {
+        for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
             cars[i].advance(moves[i], medianAngularSpeed[i], updateFactor);
         }
     }
