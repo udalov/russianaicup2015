@@ -50,7 +50,7 @@ struct CarPosition {
 
     void advance(const Go& move, double medianAngularSpeed, double updateFactor);
 
-    Rectangle rectangle() const;
+    Rect rectangle() const;
 
     string toString() const;
 };

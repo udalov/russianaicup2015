@@ -70,7 +70,7 @@ void VisClient::drawPoly(const vector<Point>& points) {
     }
 }
 
-void VisClient::drawRect(const Rectangle& rectangle) {
+void VisClient::drawRect(const Rect& rectangle) {
     drawPoly(rectangle.points);
 }
 

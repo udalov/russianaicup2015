@@ -216,10 +216,10 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
     angularSpeed += medianAngularSpeed;
 }
 
-Rectangle CarPosition::rectangle() const {
+Rect CarPosition::rectangle() const {
     Vec forward = direction() * (original->getWidth() / 2);
     Vec sideways = direction().rotate(M_PI / 2) * (original->getHeight() / 2);
-    return Rectangle({
+    return Rect({
         location + forward - sideways,
         location + forward + sideways,
         location - forward + sideways,

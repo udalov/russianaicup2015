@@ -164,7 +164,7 @@ bool Segment::contains(const Point& point) const {
            abs((point.x - p1.x) * (p2.y - p1.y) - (point.y - p1.y) * (p2.x - p1.x)) < eps_contains;
 }
 
-bool Segment::intersects(const Rectangle& rect) const {
+bool Segment::intersects(const Rect& rect) const {
     for (auto it = rect.points.begin(); it != rect.points.end(); ++it) {
         if (intersects(Segment(*it, it + 1 == rect.points.end() ? rect.points.front() : *(it + 1)))) return true;
     }

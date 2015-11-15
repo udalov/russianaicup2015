@@ -1,7 +1,7 @@
 #pragma once
 
-#include "csimplesocket/ActiveSocket.h"
 #include "math2d.h"
+#include "csimplesocket/ActiveSocket.h"
 
 #include <vector>
 
@@ -17,7 +17,7 @@ struct VisClient {
     void send(const string& message);
 
     void drawLine(const Point& first, const Point& second);
-    void drawRect(const Rectangle& rectangle);
+    void drawRect(const Rect& rectangle);
     void drawPoly(const vector<Point>& points);
     void drawCircle(const Point& center, double radius);
 };

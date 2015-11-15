@@ -1,3 +1,4 @@
+#include "math2d.h"
 #include "Const.h"
 #include "Map.h"
 #include "MyStrategy.h"
@@ -110,8 +111,8 @@ void drawMap() {
     const int dx[] = {1, 0, -1, 0};
     const int dy[] = {0, 1, 0, -1};
     const double s = 200.0;
-    for (auto i = 0; i < g.size(); i++) {
-        for (auto j = 0; j < g[i].size(); j++) {
+    for (unsigned long i = 0; i < g.size(); i++) {
+        for (unsigned long j = 0; j < g[i].size(); j++) {
             double x = i * s + s/2;
             double y = j * s + s/2;
             for (int d = 0; d < 4; d++) {
@@ -134,8 +135,8 @@ pair<int, int> findCurrentTile(const Car& self) {
     Point me = myCar.location + myCar.direction() * (game.getCarHeight() / 2);
     double bestDist = 1e100;
     pair<int, int> result;
-    for (int i = 0; i < map.width; i++) {
-        for (int j = 0; j < map.height; j++) {
+    for (unsigned long i = 0; i < map.width; i++) {
+        for (unsigned long j = 0; j < map.height; j++) {
             double curDist = abs(me.x - (i + 0.5) * tileSize) + abs(me.y - (j + 0.5) * tileSize);
             if (curDist < bestDist) {
                 bestDist = curDist;
@@ -156,7 +157,7 @@ pair<int, int> nextTileToReachWaypoint(int x, int y, int wx, int wy) {
     int start = (x << 8) + y;
     q.push_back(start);
     prev[start] = -1;
-    int qb = 0;
+    unsigned long qb = 0;
     while (qb < q.size()) {
         int v = q[qb++];
         int xx = v >> 8, yy = v & 255;

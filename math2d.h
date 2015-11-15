@@ -16,8 +16,6 @@ const double eps_contains = 1e-6;
 const double eps_equality = 1e-9;
 const double eps_intersects = 1e-9;
 
-struct Rectangle;
-
 double mySin(double x);
 double myCos(double y);
 
@@ -102,6 +100,13 @@ struct Line {
     bool intersect(const Line& other, Point& result) const;
 };
 
+struct Rect {
+    vector<Point> points;
+
+    Rect(const vector<Point>& points) : points(points) { }
+    Rect(const Rect& other) : points(other.points) { }
+};
+
 struct Segment {
     Point p1;
     Point p2;
@@ -112,16 +117,9 @@ struct Segment {
     // TODO: test
     bool contains(const Point& point) const;
 
-    bool intersects(const Rectangle& rect) const;
+    bool intersects(const Rect& rect) const;
     // TODO: test
     bool intersects(const Segment& other) const;
-};
-
-struct Rectangle {
-    vector<Point> points;
-
-    Rectangle(const vector<Point>& points) : points(points) { }
-    Rectangle(const Rectangle& other) : points(other.points) { }
 };
 
 double myHypot(double x, double y);
