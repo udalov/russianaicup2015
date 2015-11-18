@@ -1,6 +1,8 @@
 #include "State.h"
+#include "Collider.h"
 #include "Const.h"
 #include "Map.h"
+#include "math3d.h"
 
 #include <algorithm>
 #include <sstream>
@@ -46,6 +48,7 @@ double updateWheelTurn(double carWheelTurn, double moveWheelTurn) {
     return carWheelTurn + min(max(delta, -maxChange), maxChange);
 }
 
+// TODO: drop
 bool hitsTheWall(const CarPosition& car) {
     auto& game = Const::getGame();
     auto& map = Map::getMap();
@@ -72,7 +75,8 @@ bool hitsTheWall(const CarPosition& car) {
                         (tx + max(dx[d] - dy[d], 0)) * tileSize - dx[d] * margin,
                         (ty + max(dx[d] + dy[d], 0)) * tileSize - dy[d] * margin
                 );
-                if (Segment(p1, p2).intersects(rect)) {
+                Point intersection;
+                if (Segment(p1, p2).intersects(rect, intersection)) {
                     return true;
                 }
             }
@@ -92,6 +96,157 @@ bool hitsTheWall(const CarPosition& car) {
     }
 
     return false;
+}
+
+Vec3D toVec3D(const Vec& vec) {
+    return Vec3D(vec.x, vec.y, 0.0);
+}
+
+Vec3D toVec3D(const Point& p1, const Point& p2) {
+    return toVec3D(Vec(p1, p2));
+}
+
+void resolveImpact(
+        const CollisionInfo& collision, CarPosition& car, const Vec3D& normal, const Vec3D& vecBC, const Vec3D& relativeVelocity
+) {
+    static Game& game = Const::getGame();
+    static const double invertedCarMass = 1.0 / game.getBuggyMass();
+    static const double momentumTransferFactor = 0.3; // ?!
+
+    double invertedCarAngularMass = car.angularSpeed * invertedCarMass / car.velocity.length();
+
+    auto part = ((vecBC ^ normal) * invertedCarAngularMass) ^ vecBC;
+    auto denominator = invertedCarMass + normal * part;
+
+    auto impulseChange = -1.0 * (1.0 + momentumTransferFactor) * (relativeVelocity * normal) / denominator;
+    // if (D) cout << "impact impulse-change " << impulseChange << endl;
+    if (abs(impulseChange) < EPSILON) return;
+
+    auto velocityChange = normal * (impulseChange * invertedCarMass);
+    auto newVelocity = toVec3D(car.velocity) - velocityChange;
+    // if (D) cout << "impact previous-velocity " << car.velocity.toString() << endl;
+    car.velocity = Vec(newVelocity.x, newVelocity.y);
+
+    // if (D) cout << "impact velocity-change " << velocityChange.x << " " << velocityChange.y << " new-velocity " << car.velocity.toString() << endl;
+
+    auto angularSpeedChange = (vecBC ^ (normal * impulseChange)) * invertedCarAngularMass;
+    car.angularSpeed -= angularSpeedChange.z;
+    // if (D) cout << "impact angular-speed-change " << angularSpeedChange.z << " new-angular-speed " << car.angularSpeed << endl;
+}
+
+void resolveSurfaceFriction(
+        const CollisionInfo& collision, CarPosition& car, const Vec3D& normal, const Vec3D& vecBC, const Vec3D& relativeVelocity
+) {
+    static Game& game = Const::getGame();
+    static const double invertedCarMass = 1.0 / game.getBuggyMass();
+    static const double surfaceFrictionFactor = 0.015; // ?!
+
+    double invertedCarAngularMass = car.angularSpeed * invertedCarMass / car.velocity.length();
+
+    auto tangent = relativeVelocity - normal * (relativeVelocity * normal);
+    if (tangent.normSquare() < EPSILON * EPSILON) return;
+
+    tangent = tangent.normalize();
+    auto surfaceFriction = mySqrt(2 * surfaceFrictionFactor) * abs(relativeVelocity * normal) / relativeVelocity.norm();
+    if (surfaceFriction < EPSILON) return;
+
+    auto part = ((vecBC ^ tangent) * invertedCarAngularMass) ^ vecBC;
+    auto denominator = invertedCarMass + tangent * part;
+
+    auto impulseChange = -1.0 * surfaceFriction * (relativeVelocity * tangent) / denominator;
+    // if (D) cout << "surface-friction impulse-change " << impulseChange << endl;
+    if (abs(impulseChange) < EPSILON) return;
+
+    auto velocityChange = tangent * (impulseChange * invertedCarMass);
+    auto newVelocity = toVec3D(car.velocity) - velocityChange;
+    // if (D) cout << "surface-friction previous-velocity " << car.velocity.toString() << endl;
+    car.velocity = Vec(newVelocity.x, newVelocity.y);
+
+    // if (D) cout << "surface-friction velocity-change " << velocityChange.x << " " << velocityChange.y << " new-velocity " << car.velocity.toString() << endl;
+
+    auto angularSpeedChange = (vecBC ^ (tangent * impulseChange)) * invertedCarAngularMass;
+    car.angularSpeed -= angularSpeedChange.z;
+    // if (D) cout << "surface-friction angular-speed-change " << angularSpeedChange.z << " new-angular-speed " << car.angularSpeed << endl;
+}
+
+void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
+    auto normal = toVec3D(collision.normal);
+    auto vecBC = toVec3D(car.location, collision.point);
+    auto angularSpeedBC = Vec3D(0.0, 0.0, car.angularSpeed) ^ vecBC;
+    auto velocityBC = toVec3D(car.velocity) + angularSpeedBC;
+    auto relativeVelocity = -velocityBC;
+    if (relativeVelocity * normal < EPSILON) {
+        // TODO: optimize
+        resolveImpact(collision, car, normal, vecBC, relativeVelocity);
+        resolveSurfaceFriction(collision, car, normal, vecBC, relativeVelocity);
+    }
+    if (collision.depth > EPSILON) {
+        car.location -= collision.normal * (collision.depth + EPSILON);
+    }
+}
+
+void collideCarWithWalls(CarPosition& car) {
+    static Game& game = Const::getGame();
+    static Map& map = Map::getMap();
+    static const double margin = game.getTrackTileMargin();
+    static const double tileSize = game.getTrackTileSize();
+    static const double carRadius = myHypot(game.getCarHeight() / 2, game.getCarWidth() / 2);
+
+    static const int dx[] = {1, 0, -1, 0};
+    static const int dy[] = {0, 1, 0, -1};
+
+    auto rect = car.rectangle();
+
+    auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
+    auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
+    for (auto tx = tileX; tx <= min(tileX + 1, map.width - 1); tx++) {
+        for (auto ty = tileY; ty <= min(tileY + 1, map.height - 1); ty++) {
+            auto tile = map.graph[tx][ty];
+            for (int d = 0; d < 4; d++) {
+                if (tile & (1 << d)) continue;
+                auto p1 = Point(
+                        (tx + max(dx[d] + dy[d], 0)) * tileSize - dx[d] * margin,
+                        (ty + max(dy[d] - dx[d], 0)) * tileSize - dy[d] * margin
+                );
+                auto p2 = Point(
+                        (tx + max(dx[d] - dy[d], 0)) * tileSize - dx[d] * margin,
+                        (ty + max(dx[d] + dy[d], 0)) * tileSize - dy[d] * margin
+                );
+                auto wall = Segment(p1, p2);
+                if (wall.distanceFrom(car.location) > carRadius + EPSILON) continue;
+                CollisionInfo collision;
+                if (collideRectAndSegment(rect, wall, collision)) {
+                    /*
+                    if (D) {
+                        cout << "collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
+                        cout << "  (with segment " << wall.p1.toString() << " -> " << wall.p2.toString() << ")" << endl;
+                    }
+                    */
+                    resolveWallCollision(collision, car);
+                }
+            }
+
+            for (int d = 0; d < 4; d++) {
+                if (!(tile & (1 << d)) || !(tile & (1 << ((d + 1) & 3)))) continue;
+                auto p = Point(
+                        (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
+                        (ty + (dx[d] + dy[d] + 1.) / 2) * tileSize
+                );
+                if (rect.distanceFrom(p) > margin + EPSILON) continue;
+                auto corner = Circle(p, margin);
+                CollisionInfo collision;
+                if (collideRectAndCircle(rect, corner, collision)) {
+                    /*
+                    if (D) {
+                        cout << "collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
+                        cout << "  (with corner at " << p.toString() << ")" << endl;
+                    }
+                    */
+                    resolveWallCollision(collision, car);
+                }
+            }
+        }
+    }
 }
 
 State State::apply(const vector<Go>& moves) const {
@@ -131,6 +286,10 @@ State State::apply(const vector<Go>& moves) const {
     for (int iteration = 1; iteration <= ITERATION_COUNT_PER_STEP; iteration++) {
         for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
             cars[i].advance(moves[i], medianAngularSpeed[i], updateFactor);
+        }
+
+        for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
+            collideCarWithWalls(cars[i]);
         }
     }
 

@@ -15,17 +15,28 @@ using std::vector;
 const double eps_contains = 1e-6;
 const double eps_equality = 1e-9;
 const double eps_intersects = 1e-9;
+const double eps_normal = 1e-9;
 
 double mySin(double x);
 double myCos(double y);
+
+struct Point;
 
 struct Vec {
     double x;
     double y;
 
+    Vec() : x(), y() { }
     Vec(double x, double y) : x(x), y(y) { }
     Vec(const Vec& other) : x(other.x), y(other.y) { }
     Vec(double angle) : x(myCos(angle)), y(mySin(angle)) { }
+    Vec(const Point& p1, const Point& p2);
+
+    Vec *operator=(const Vec& other) {
+        x = other.x;
+        y = other.y;
+        return this;
+    }
 
     bool operator==(const Vec& other) const {
         return abs(x - other.x) < eps_equality && abs(y - other.y) < eps_equality;
@@ -62,9 +73,15 @@ struct Point {
     double x;
     double y;
 
-    Point() : x(0.0), y(0.0) { }
+    Point() : x(), y() { }
     Point(double x, double y) : x(x), y(y) { }
     Point(const Point& other) : x(other.x), y(other.y) { }
+
+    Point *operator=(const Point& other) {
+        x = other.x;
+        y = other.y;
+        return this;
+    }
 
     bool operator==(const Point& other) const {
         return abs(x - other.x) < eps_equality && abs(y - other.y) < eps_equality;
@@ -87,6 +104,7 @@ struct Line {
     double b;
     double c;
 
+    Line(double a, double b, double c) : a(a), b(b), c(c) { }
     Line(const Point& p1, const Point& p2) :
             a(p1.y - p2.y),
             b(p2.x - p1.x),
@@ -95,11 +113,16 @@ struct Line {
     double distanceFrom(const Point& point) const;
     double signedDistanceFrom(const Point& point) const;
 
+    // TODO: test
+    Line parallelLine(const Point& point) const;
+    // TODO: test
+    Vec unitNormalFrom(const Point& point) const;
+
     bool contains(const Point& point) const;
 
     Point project(const Point& point) const;
 
-    bool intersect(const Line& other, Point& result) const;
+    bool intersects(const Line& other, Point& result) const;
 };
 
 struct Rect {
@@ -109,6 +132,8 @@ struct Rect {
     Rect(const Rect& other) : points(other.points) { }
 
     double distanceFrom(const Point& point) const;
+
+    Point center() const;
 };
 
 struct Segment {
@@ -124,15 +149,24 @@ struct Segment {
 
     bool contains(const Point& point) const;
 
-    bool intersects(const Point& q1, const Point& q2) const;
-    bool intersects(const Rect& rect) const;
-    bool intersects(const Segment& other) const;
+    bool intersects(const Point& q1, const Point& q2, Point& result) const;
+    bool intersects(const Rect& rect, Point& result) const;
+    bool intersects(const Segment& other, Point& result) const;
+};
+
+struct Circle {
+    Point center;
+    double radius;
+
+    Circle(const Point& center, double radius) : center(center), radius(radius) { }
+    Circle(const Circle& other) : center(other.center), radius(other.radius) { }
 };
 
 double myHypot(double x, double y);
 double myAtan2(double y, double x);
 double mySin(double x);
 double myCos(double y);
+double mySqrt(double x);
 
 // Normalizes the angle to the range [-PI, PI]
 double normalizeAngle(double alpha);

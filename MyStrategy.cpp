@@ -11,7 +11,7 @@
 using namespace model;
 using namespace std;
 
-// #define DEBUG_PHYSICS_PREDICTION
+#define DEBUG_PHYSICS_PREDICTION
 #ifndef ONLINE_JUDGE
 #define VISUALIZE
 #endif
@@ -36,14 +36,14 @@ void initialize(const Game& game) {
 // ---- Debugging physics prediction ----
 
 Go goDebugPhysicsPrediction(int tick) {
-    if (280 <= tick && tick < 290) {
+    if (280 <= tick && tick < 285) {
         return Go(1.0, 1.0);
     }
     return Go(1.0, 0.0);
 };
 
 bool isPhysicsPredictionOutputNeeded(int tick) {
-    return 280 <= tick && tick <= 305;
+    return 445 <= tick && tick <= 450;
 }
 
 void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game& game, Move& move) {
@@ -58,20 +58,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
     move.setUseNitro(experimentalMove.useNitro);
     move.setSpillOil(experimentalMove.spillOil);
 
-    const int lookahead = 1;
-
     auto currentState = State(&world);
-    auto state = currentState;
-    for (int i = 0; i < lookahead; i++) {
-        auto go = goDebugPhysicsPrediction(world.getTick() + i);
-        vector<Go> moves = { go, go, go, go };
-        state = state.apply(moves);
-    }
-
-    auto expectedMyCar = state.getCarById(self.getId());
-    expectedPosByTick.insert({ world.getTick() + lookahead, expectedMyCar });
-
-    vis->drawRect(expectedMyCar.rectangle());
 
     if (isPhysicsPredictionOutputNeeded(world.getTick())) {
         const double eps = 1e-9;
@@ -96,12 +83,28 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
         if (abs(diffEnginePower) > eps) cout << " engine " << diffEnginePower;
         auto diffWheelTurn = actual.wheelTurn - predicted.wheelTurn;
         if (abs(diffWheelTurn) > eps) cout << " wheel " << diffWheelTurn;
+        auto diffHealth = actual.health - predicted.health;
+        if (abs(diffHealth) > eps) cout << " health " << diffHealth;
         auto diffNitroCharges = actual.nitroCharges - predicted.nitroCharges;
         if (abs(diffNitroCharges) > eps) cout << " nitros " << diffNitroCharges;
         auto diffNitroCooldown = actual.nitroCooldown - predicted.nitroCooldown;
         if (abs(diffNitroCooldown) > eps) cout << " nitro cooldown " << diffNitroCooldown;
         cout << endl;
     }
+
+    const int lookahead = 1;
+
+    auto state = currentState;
+    for (int i = 0; i < lookahead; i++) {
+        auto go = goDebugPhysicsPrediction(world.getTick() + i);
+        vector<Go> moves = { go, go, go, go };
+        state = state.apply(moves);
+    }
+
+    auto expectedMyCar = state.getCarById(self.getId());
+    expectedPosByTick.insert({ world.getTick() + lookahead, expectedMyCar });
+
+    vis->drawRect(expectedMyCar.rectangle());
 }
 
 // ----

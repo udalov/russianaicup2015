@@ -25,11 +25,13 @@ add_library(russianaicup
         Runner.cpp
         Strategy.cpp
         math2d.cpp
+        math3d.cpp
         State.cpp
         Go.cpp
         VisClient.cpp
         Const.cpp
         Map.cpp
+        Collider.cpp
         )
 
 add_subdirectory(test)

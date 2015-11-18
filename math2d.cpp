@@ -5,6 +5,8 @@
 
 using namespace std;
 
+Vec::Vec(const Point& p1, const Point& p2) : x(p2.x - p1.x), y(p2.y - p1.y) { }
+
 double Vec::angle() const {
     return myAtan2(y, x);
 }
@@ -114,9 +116,20 @@ Point Line::project(const Point& point) const {
     return Point { x, y };
 }
 
+Line Line::parallelLine(const Point& point) const {
+    return Line(a, b, a * point.x + b * point.y);
+}
+
+Vec Line::unitNormalFrom(const Point& point) const {
+    double dist = signedDistanceFrom(point);
+    double coeff = dist < -eps_normal ? 1 : -1;
+    double pseudoLength = myHypot(a, b);
+    return Vec(coeff * a / pseudoLength, coeff * b / pseudoLength);
+}
+
 double myHypot(double x, double y) {
     // This is faster than hypot
-    return sqrt(x * x + y * y);
+    return mySqrt(x * x + y * y);
 }
 
 double myAtan2(double y, double x) {
@@ -138,6 +151,10 @@ double mySin(double x) {
 
 double myCos(double y) {
     return mySin(M_PI / 2 - y);
+}
+
+double mySqrt(double x) {
+    return sqrt(x);
 }
 
 double normalizeAngle(double alpha) {
@@ -195,19 +212,19 @@ bool Segment::contains(const Point& point) const {
     return segmentContainsPoint(p1.x, p1.y, p2.x, p2.y, point.x, point.y);
 }
 
-bool Segment::intersects(const Rect& rect) const {
+bool Segment::intersects(const Rect& rect, Point& result) const {
     auto& points = rect.points;
     for (unsigned long i = 0, size = points.size(); i < size; i++) {
-        if (intersects(points[i], points[i + 1 == size ? 0 : i + 1])) return true;
+        if (intersects(points[i], points[i + 1 == size ? 0 : i + 1], result)) return true;
     }
     return false;
 }
 
-bool Segment::intersects(const Segment& other) const {
-    return intersects(other.p1, other.p2);
+bool Segment::intersects(const Segment& other, Point& result) const {
+    return intersects(other.p1, other.p2, result);
 }
 
-bool Segment::intersects(const Point& q1, const Point& q2) const {
+bool Segment::intersects(const Point& q1, const Point& q2, Point& result) const {
     if (min(q1.x, q2.x) > max(p1.x, p2.x) + eps_intersects ||
         min(p1.x, p2.x) > max(q1.x, q2.x) + eps_intersects ||
         min(q1.y, q2.y) > max(p1.y, p2.y) + eps_intersects ||
@@ -215,14 +232,21 @@ bool Segment::intersects(const Point& q1, const Point& q2) const {
     // TODO: optimize
     auto l1 = Line(p1, p2);
     auto l2 = Line(q1, q2);
-    Point p;
-    return l1.intersect(l2, p) && contains(p) && segmentContainsPoint(q1.x, q1.y, q2.x, q2.y, p.x, p.y);
+    return l1.intersects(l2, result) && contains(result) &&
+           segmentContainsPoint(q1.x, q1.y, q2.x, q2.y, result.x, result.y);
 }
 
-bool Line::intersect(const Line& other, Point& result) const {
+bool Line::intersects(const Line& other, Point& result) const {
     double d = a * other.b - other.a * b;
     if (abs(d) < eps_intersects) return false;
     result.x = (c * other.b - other.c * b) / d;
     result.y = (a * other.c - other.a * c) / d;
     return true;
+}
+
+Point Rect::center() const {
+    return Point(
+            (points[0].x + points[1].x + points[2].x + points[3].x) / 4,
+            (points[0].y + points[1].y + points[2].y + points[3].y) / 4
+    );
 }
