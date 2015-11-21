@@ -172,41 +172,6 @@ void drawMap() {
 
 // ----
 
-// ---- Waypoint indices ----
-
-unordered_map<long long, unsigned long> nextWaypointIndex;
-
-void updateWaypointIndices(const World& world) {
-    auto& waypoints = world.getWaypoints();
-
-    if (nextWaypointIndex.empty()) {
-        for (auto& car : world.getCars()) {
-            for (unsigned long i = 0, size = waypoints.size(); i < size; i++) {
-                if (waypoints[i][0] == car.getNextWaypointX() && waypoints[i][1] == car.getNextWaypointY()) {
-                    nextWaypointIndex[car.getId()] = i;
-                    break;
-                }
-            }
-            if (nextWaypointIndex.find(car.getId()) == nextWaypointIndex.end()) {
-                nextWaypointIndex[car.getId()] = 0;
-                cerr << "next waypoint index not found for car " << car.getId() << endl;
-            }
-        }
-        return;
-    }
-
-    for (auto& car : world.getCars()) {
-        auto& i = nextWaypointIndex[car.getId()];
-        if (waypoints[i][0] != car.getNextWaypointX() || waypoints[i][1] != car.getNextWaypointY()) {
-            i = (i + 1) % waypoints.size();
-        }
-    }
-}
-
-unsigned long getNextWaypointIndex(const Car& car) {
-    return nextWaypointIndex[car.getId()];
-}
-
 // ----
 
 pair<int, int> findCurrentTile(const Car& self) {
@@ -330,7 +295,7 @@ Point computeNextWaypoint(const Car& self, const World& world, const Game& game)
     auto nextTile =
             nextTileToReachWaypoint(curTile.first, curTile.second, nextWaypoint.first, nextWaypoint.second);
     if (nextTile == nextWaypoint) {
-        unsigned long j = getNextWaypointIndex(self);
+        unsigned long j = self.getNextWaypointIndex();
         j = (j + 1) % waypoints.size();
         nextWaypoint = make_pair(waypoints[j][0], waypoints[j][1]);
     }
@@ -360,8 +325,6 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         initialized = true;
         initialize(game);
     }
-
-    updateWaypointIndices(world);
 
     auto& map = Map::getMap();
     map.update(world);
