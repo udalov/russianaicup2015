@@ -6,12 +6,13 @@
 #include "VisClient.h"
 
 #include <iostream>
+#include <sstream>
 #include <unordered_map>
 
 using namespace model;
 using namespace std;
 
-#define DEBUG_PHYSICS_PREDICTION
+// #define DEBUG_PHYSICS_PREDICTION
 #ifndef ONLINE_JUDGE
 #define VISUALIZE
 #endif
@@ -35,15 +36,57 @@ void initialize(const Game& game) {
 
 // ---- Debugging physics prediction ----
 
+enum class DPPMode {
+    COLLISION_WITH_SEGMENT_HIGH_SPEED,
+    COLLISION_WITH_SEGMENT_SIDEWAYS,
+    COLLISION_WITH_CORNER,
+    BRAKE,
+};
+
+const DPPMode mode = DPPMode::BRAKE;
+
 Go goDebugPhysicsPrediction(int tick) {
-    if (280 <= tick && tick < 285) {
-        return Go(1.0, 1.0);
+    if (mode == DPPMode::COLLISION_WITH_SEGMENT_HIGH_SPEED) {
+        if (tick == 181) {
+            return Go(1.0, 1.0, false, false, true);
+        }
+        if (280 <= tick && tick < 285) {
+            return Go(1.0, 1.0);
+        }
+        return Go(1.0, 0.0);
+    } else if (mode == DPPMode::COLLISION_WITH_SEGMENT_SIDEWAYS) {
+        if (400 <= tick && tick < 450) {
+            return Go(-1.0, 1.0);
+        }
+        return Go(1.0, 0.0);
+    } else if (mode == DPPMode::COLLISION_WITH_CORNER) {
+        if (375 <= tick && tick < 450) {
+            return Go(-1.0, 1.0);
+        }
+        if (450 <= tick && tick < 480) {
+            return Go(-1.0, 0.0);
+        }
+        return Go(1.0, 0.0);
+    } else if (mode == DPPMode::BRAKE) {
+        if (250 <= tick && tick <= 260) {
+            return Go(1.0, 0.0, true);
+        }
+        return Go(1.0, 0.0);
     }
-    return Go(1.0, 0.0);
 };
 
 bool isPhysicsPredictionOutputNeeded(int tick) {
-    return 445 <= tick && tick <= 450;
+    if (mode == DPPMode::COLLISION_WITH_SEGMENT_HIGH_SPEED) {
+        return 359 <= tick && tick <= 363;
+    } else if (mode == DPPMode::COLLISION_WITH_SEGMENT_SIDEWAYS) {
+        return 461 <= tick && tick <= 465;
+    } else if (mode == DPPMode::COLLISION_WITH_CORNER) {
+        return 609 <= tick && tick <= 613;
+    } else if (mode == DPPMode::BRAKE) {
+        return 248 <= tick && tick <= 262;
+    } else {
+        terminate();
+    }
 }
 
 void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game& game, Move& move) {
@@ -97,7 +140,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
     auto state = currentState;
     for (int i = 0; i < lookahead; i++) {
         auto go = goDebugPhysicsPrediction(world.getTick() + i);
-        vector<Go> moves = { go, go, go, go };
+        vector<Go> moves(world.getCars().size(), go);
         state = state.apply(moves);
     }
 
@@ -228,29 +271,33 @@ pair<int, int> nextTileToReachWaypoint(int x, int y, int wx, int wy) {
 }
 
 Go experimentalBruteForce(const World& world, const Point& nextWaypoint) {
+    static const unsigned long carsCount = world.getCars().size();
+
     Go best(-1.0, 0.0);
     double bestDist = 1e100;
     auto startState = State(&world);
+    auto currentHealth = startState.cars.front().health;
+
     for (double e1 = 0.0; e1 <= 1.0; e1 += 0.5) {
         for (double w1 = -1.0; w1 <= 1.0; w1 += 0.25) {
             for (bool brake : { false, true }) {
                 Go go(e1, w1, brake);
-                vector<Go> moves = { go, go, go, go };
+                vector<Go> moves(carsCount, go);
                 auto state = startState;
                 for (int i = 0; i < 10; i++) {
                     state = state.apply(moves);
-                    if (state.cars.front().health == 0.0) break;
+                    if (currentHealth - state.cars.front().health > 0.03) break;
                 }
-                if (state.cars.front().health == 0.0) continue;
+                if (currentHealth - state.cars.front().health > 0.03) continue;
 
                 for (double e2 = 0.0; e2 <= 1.0; e2 += 0.5) {
                     Go future(e2, 0.0);
-                    vector<Go> futureMoves = { future, future, future, future };
+                    vector<Go> futureMoves(carsCount, future);
                     auto next = State(state);
                     for (int i = 0; i < 20; i++) {
                         next = next.apply(futureMoves);
                         auto myFutureCar = next.cars.front();
-                        if (myFutureCar.health == 0.0) break;
+                        if (currentHealth - myFutureCar.health > 0.03) break;
                         double curDist = myFutureCar.location.distanceTo(nextWaypoint);
                         if (curDist < bestDist) {
                             bestDist = curDist;
@@ -295,6 +342,18 @@ Point computeNextWaypoint(const Car& self, const World& world, const Game& game)
     );
 }
 
+void printMove(const Move& move) {
+    ostringstream ss;
+    ss.precision(3);
+    ss << fixed << move.getEnginePower() << "|" << move.getWheelTurn();
+    if (move.isBrake()) ss << "|BRAKE";
+    if (move.isThrowProjectile()) ss << "|FIRE";
+    if (move.isUseNitro()) ss << "|NITRO";
+    if (move.isSpillOil()) ss << "|OIL";
+    
+    vis->drawTextStatic(Point(450, 40), ss.str());
+}
+
 void MyStrategy::move(const Car& self, const World& world, const Game& game, Move& move) {
     static bool initialized = false;
     if (!initialized) {
@@ -323,8 +382,9 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
     vis->drawCircle(nextWaypoint, 150);
 
     Go best = experimentalBruteForce(world, nextWaypoint);
-    move.setEnginePower(best.enginePower);
-    move.setWheelTurn(best.wheelTurn);
+    best.applyTo(move);
+
+    printMove(move);
 }
 
 MyStrategy::MyStrategy() { }

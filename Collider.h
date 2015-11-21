@@ -9,9 +9,11 @@ struct CollisionInfo {
 
     CollisionInfo() : point(), normal(), depth() { }
     CollisionInfo(const Point& point, const Vec& normal, double depth) :
-        point(point), normal(normal), depth(depth) { }
+            point(point), normal(normal), depth(depth) { }
+    CollisionInfo(const CollisionInfo& other) :
+            point(other.point), normal(other.normal), depth(other.depth) { }
 };
 
 bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionInfo& result);
 
-bool collideRectAndCircle(const Rect& rect, const Circle& circle, CollisionInfo& result);
+bool collideCircleAndRect(const Rect& rect, const Circle& circle, CollisionInfo& result);

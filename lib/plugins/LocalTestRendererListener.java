@@ -2,8 +2,10 @@ import model.Game;
 import model.World;
 
 import java.awt.*;
+import java.util.ArrayList;
 
-import static java.lang.StrictMath.*;
+import static java.lang.StrictMath.abs;
+import static java.lang.StrictMath.round;
 
 public final class LocalTestRendererListener {
     private static final LocalServer server = LocalServer.INSTANCE;
@@ -24,17 +26,24 @@ public final class LocalTestRendererListener {
     private double width;
     private double height;
 
+    private final ArrayList<String> messages = new ArrayList<>();
+
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                 double left, double top, double width, double height) {
         ConstDump.run(game);
 
+        messages.clear();
         while (true) {
             String message = server.messages.poll();
             if (message == null) break;
-            handleMessage(graphics, message);
+            messages.add(message);
         }
 
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
+
+        for (String message : messages) {
+            handleMessage(graphics, message);
+        }
     }
 
     private void handleMessage(Graphics graphics, String message) {
@@ -63,6 +72,9 @@ public final class LocalTestRendererListener {
             case "text":
                 drawText((double) args[0], (double) args[1], (String) args[2]);
                 break;
+            case "text-static":
+                drawTextStatic((double) args[0], (double) args[1], (String) args[2]);
+                break;
             default:
                 log("unknown message: " + message);
                 break;
@@ -72,6 +84,10 @@ public final class LocalTestRendererListener {
     public void afterDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                double left, double top, double width, double height) {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
+
+        for (String message : messages) {
+            handleMessage(graphics, message);
+        }
     }
 
     private void updateFields(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
@@ -143,6 +159,11 @@ public final class LocalTestRendererListener {
 
         graphics.setFont(new Font("Tahoma", Font.BOLD, 12));
         graphics.drawString(text, point.x, point.y);
+    }
+
+    private void drawTextStatic(double x, double y, String text) {
+        graphics.setFont(new Font("Menlo", Font.PLAIN, 12));
+        graphics.drawString(text, (int) x, (int) y);
     }
 
     private void drawPolygon(Point2D... points) {

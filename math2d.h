@@ -170,3 +170,6 @@ double mySqrt(double x);
 
 // Normalizes the angle to the range [-PI, PI]
 double normalizeAngle(double alpha);
+
+bool withinAABB(double x1, double y1, double x2, double y2, double x, double y);
+bool withinAABB(const Point& p1, const Point& p2, const Point& p);

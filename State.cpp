@@ -10,7 +10,7 @@
 
 using namespace std;
 
-const int ITERATION_COUNT_PER_STEP = 10;
+const int ITERATION_COUNT_PER_STEP = 2;
 const double EPSILON = 1e-7;
 
 State::State(const World *world) : original(world) {
@@ -46,56 +46,6 @@ double updateWheelTurn(double carWheelTurn, double moveWheelTurn) {
     static double maxChange = Const::getGame().getCarWheelTurnChangePerTick();
     auto delta = moveWheelTurn - carWheelTurn;
     return carWheelTurn + min(max(delta, -maxChange), maxChange);
-}
-
-// TODO: drop
-bool hitsTheWall(const CarPosition& car) {
-    auto& game = Const::getGame();
-    auto& map = Map::getMap();
-    const double margin = game.getTrackTileMargin();
-    const double tileSize = game.getTrackTileSize();
-
-    static const int dx[] = {1, 0, -1, 0};
-    static const int dy[] = {0, 1, 0, -1};
-
-    auto rect = car.rectangle();
-
-    auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
-    auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
-    for (auto tx = tileX; tx <= min(tileX + 1, map.width - 1); tx++) {
-        for (auto ty = tileY; ty <= min(tileY + 1, map.height - 1); ty++) {
-            auto tile = map.graph[tx][ty];
-            for (int d = 0; d < 4; d++) {
-                if (tile & (1 << d)) continue;
-                auto p1 = Point(
-                        (tx + max(dx[d] + dy[d], 0)) * tileSize - dx[d] * margin,
-                        (ty + max(dy[d] - dx[d], 0)) * tileSize - dy[d] * margin
-                );
-                auto p2 = Point(
-                        (tx + max(dx[d] - dy[d], 0)) * tileSize - dx[d] * margin,
-                        (ty + max(dx[d] + dy[d], 0)) * tileSize - dy[d] * margin
-                );
-                Point intersection;
-                if (Segment(p1, p2).intersects(rect, intersection)) {
-                    return true;
-                }
-            }
-
-            for (int d = 0; d < 4; d++) {
-                if ((tile & (1 << d)) && (tile & (1 << ((d + 1) & 3)))) {
-                    auto p = Point(
-                            (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
-                            (ty + (dx[d] + dy[d] + 1.) / 2) * tileSize
-                    );
-                    if (rect.distanceFrom(p) < margin + EPSILON) {
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-
-    return false;
 }
 
 Vec3D toVec3D(const Vec& vec) {
@@ -170,6 +120,9 @@ void resolveSurfaceFriction(
 }
 
 void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
+    // if (D) cout << "  velocity " << car.velocity.length() << endl;
+    car.health = max(car.health - car.velocity.length() / 200.0, 0.0); // ?!
+
     auto normal = toVec3D(collision.normal);
     auto vecBC = toVec3D(car.location, collision.point);
     auto angularSpeedBC = Vec3D(0.0, 0.0, car.angularSpeed) ^ vecBC;
@@ -218,7 +171,7 @@ void collideCarWithWalls(CarPosition& car) {
                 if (collideRectAndSegment(rect, wall, collision)) {
                     /*
                     if (D) {
-                        cout << "collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
+                        cout << "segment collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
                         cout << "  (with segment " << wall.p1.toString() << " -> " << wall.p2.toString() << ")" << endl;
                     }
                     */
@@ -235,11 +188,11 @@ void collideCarWithWalls(CarPosition& car) {
                 if (rect.distanceFrom(p) > margin + EPSILON) continue;
                 auto corner = Circle(p, margin);
                 CollisionInfo collision;
-                if (collideRectAndCircle(rect, corner, collision)) {
+                if (collideCircleAndRect(rect, corner, collision)) {
                     /*
                     if (D) {
-                        cout << "collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
-                        cout << "  (with corner at " << p.toString() << ")" << endl;
+                        cout << "corner collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
+                        cout << "  (me at " << car.location.toString() << " with corner at " << p.toString() << ")" << endl;
                     }
                     */
                     resolveWallCollision(collision, car);
@@ -291,11 +244,6 @@ State State::apply(const vector<Go>& moves) const {
         for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
             collideCarWithWalls(cars[i]);
         }
-    }
-
-    // TODO: this is temporary
-    if (hitsTheWall(cars.front())) {
-        cars.front().health = 0.0;
     }
 
     vector<OilSlickPosition> oilSlicks;

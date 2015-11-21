@@ -85,3 +85,9 @@ void VisClient::drawText(const Point& point, const string& text) {
     ss << "text " << point.x << " " << point.y << " " << text;
     send(ss.str());
 }
+
+void VisClient::drawTextStatic(const Point& point, const string& text) {
+    ostringstream ss;
+    ss << "text-static " << (int) point.x << " " << (int) point.y << " " << text;
+    send(ss.str());
+}
