@@ -1,7 +1,8 @@
 #include "math2d.h"
+#include "MyStrategy.h"
 #include "Const.h"
 #include "Map.h"
-#include "MyStrategy.h"
+#include "Path.h"
 #include "State.h"
 #include "VisClient.h"
 
@@ -174,7 +175,7 @@ void drawMap() {
 
 // ----
 
-pair<int, int> findCurrentTile(const Car& self) {
+Tile findCurrentTile(const Car& self) {
     auto& map = Map::getMap();
     auto& game = Const::getGame();
     const double tileSize = game.getTrackTileSize();
@@ -182,58 +183,18 @@ pair<int, int> findCurrentTile(const Car& self) {
     CarPosition myCar(&self);
     Point me = myCar.location + myCar.direction() * (game.getCarHeight() / 2);
     double bestDist = 1e100;
-    pair<int, int> result;
+    Tile result;
     for (unsigned long i = 0; i < map.width; i++) {
         for (unsigned long j = 0; j < map.height; j++) {
             double curDist = abs(me.x - (i + 0.5) * tileSize) + abs(me.y - (j + 0.5) * tileSize);
             if (curDist < bestDist) {
                 bestDist = curDist;
-                result = make_pair(i, j);
+                result = Tile(i, j);
             }
         }
     }
     return result;
 };
-
-pair<int, int> nextTileToReachWaypoint(int x, int y, int wx, int wy) {
-    static const int dx[] = {1, 0, -1, 0};
-    static const int dy[] = {0, 1, 0, -1};
-    auto& map = Map::getMap();
-
-    if (x == wx && y == wy) return make_pair(x, y);
-    
-    vector<int> q;
-    unordered_map<int, int> prev;
-    int start = (x << 8) + y;
-    q.push_back(start);
-    prev[start] = -1;
-    unsigned long qb = 0;
-    while (qb < q.size()) {
-        int v = q[qb++];
-        int xx = v >> 8, yy = v & 255;
-        if (xx == wx && yy == wy) {
-            while (prev.find(v) != prev.end()) {
-                if (prev[v] == start) return make_pair(v >> 8, v & 255);
-                v = prev[v];
-            }
-            cerr << "bad path" << endl;
-            return make_pair(x, y);
-        }
-        for (int d = 0; d < 4; d++) {
-            if (map.graph[xx][yy] & (1 << d)) {
-                int nx = xx + dx[d], ny = yy + dy[d];
-                int nv = (nx << 8) + ny;
-                if (prev.find(nv) == prev.end()) {
-                    prev[nv] = v;
-                    q.push_back(nv);
-                }
-            }
-        }
-    }
-    
-    cerr << "path not found from " << x << " " << y << " to " << wx << " " << wy << endl;
-    return make_pair(x, y);
-}
 
 Go experimentalBruteForce(const World& world, const Point& nextWaypoint) {
     static const unsigned long carsCount = world.getCars().size();
@@ -291,20 +252,15 @@ Point computeNextWaypoint(const Car& self, const World& world, const Game& game)
     }
 
     auto curTile = findCurrentTile(self);
-    auto nextWaypoint = make_pair(self.getNextWaypointX(), self.getNextWaypointY());
-    auto nextTile =
-            nextTileToReachWaypoint(curTile.first, curTile.second, nextWaypoint.first, nextWaypoint.second);
-    if (nextTile == nextWaypoint) {
-        unsigned long j = self.getNextWaypointIndex();
-        j = (j + 1) % waypoints.size();
-        nextWaypoint = make_pair(waypoints[j][0], waypoints[j][1]);
-    }
-    nextTile =
-            nextTileToReachWaypoint(nextTile.first, nextTile.second, nextWaypoint.first, nextWaypoint.second);
-    return Point(
-            (nextTile.first + 0.5) * game.getTrackTileSize(),
-            (nextTile.second + 0.5) * game.getTrackTileSize()
-    );
+    auto nextWaypoint = Tile(self.getNextWaypointX(), self.getNextWaypointY());
+    auto path = bestPath(curTile, nextWaypoint);
+    if (path.size() >= 2) return path[1].toPoint();
+
+    unsigned long j = self.getNextWaypointIndex();
+    j = (j + 1) % waypoints.size();
+    auto nextNextWaypoint = Tile(waypoints[j][0], waypoints[j][1]);
+    path = bestPath(nextWaypoint, nextNextWaypoint);
+    return path[0].toPoint();
 }
 
 void printMove(const Move& move) {

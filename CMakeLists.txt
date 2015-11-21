@@ -32,6 +32,7 @@ add_library(russianaicup
         Const.cpp
         Map.cpp
         Collider.cpp
+        Path.cpp
         )
 
 add_subdirectory(test)

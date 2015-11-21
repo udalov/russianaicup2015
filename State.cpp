@@ -19,7 +19,7 @@ State::State(const World *world) : original(world) {
     for (bool teammates : { true, false }) {
         for (unsigned long i = 0, size = cars.size(); i < size; i++) {
             if (teammates == (world->getMyPlayer().getId() == cars[i].getPlayerId())) {
-                this->cars.push_back(CarPosition(&cars[i]));
+                this->cars.emplace_back(&cars[i]);
             }
         }
     }
@@ -27,12 +27,12 @@ State::State(const World *world) : original(world) {
     auto& oilSlicks = world->getOilSlicks();
     this->oilSlicks.reserve(oilSlicks.size());
     for (unsigned long i = 0, size = oilSlicks.size(); i < size; i++) {
-        this->oilSlicks.push_back(OilSlickPosition(&oilSlicks[i]));
+        this->oilSlicks.emplace_back(&oilSlicks[i]);
     }
 
     auto& washers = world->getProjectiles();
     for (unsigned long i = 0, size = washers.size(); i < size; i++) {
-        this->washers.push_back(WasherPosition(&washers[i]));
+        this->washers.emplace_back(&washers[i]);
     }
 }
 
