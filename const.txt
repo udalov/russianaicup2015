@@ -3,7 +3,7 @@ bonusSize 70.000000000000
 buggyEngineForwardPower 312.500000000000
 buggyEngineRearPower 234.375000000000
 buggyMass 1250.000000000000
-burningTimeDurationFactor 0.500000000000
+burningTimeDurationFactor 0.400000000000
 carAngularSpeedFactor 0.001745329252
 carCrosswiseMovementFrictionFactor 0.250000000000
 carDamageScoreFactor 100.000000000000
@@ -18,12 +18,12 @@ carRotationFrictionFactor 0.008726646260
 carWheelTurnChangePerTick 0.050000000000
 carWidth 210.000000000000
 finishLapScore 1000
-finishTrackScores [2048, 1024, 512, 256]
+finishTrackScores [512, 256, 128, 64]
 initialFreezeDurationTicks 180
 jeepEngineForwardPower 375.000000000000
 jeepEngineRearPower 281.250000000000
 jeepMass 1500.000000000000
-lapCount 4
+lapCount 2
 lapWaypointsSummaryScoreFactor 0.500000000000
 maxOiledStateDurationTicks 60
 nitroDurationTicks 120
@@ -36,7 +36,7 @@ randomSeed 0
 sideWasherAngle 0.034906585040
 spillOilCooldownTicks 120
 throwProjectileCooldownTicks 60
-tireDamageFactor 0.250000000000
+tireDamageFactor 0.350000000000
 tireDisappearSpeedFactor 0.250000000000
 tireInitialSpeed 60.000000000000
 tireMass 1000.000000000000
@@ -44,7 +44,7 @@ tireRadius 70.000000000000
 trackTileMargin 80.000000000000
 trackTileSize 800.000000000000
 useNitroCooldownTicks 120
-washerDamage 0.100000000000
+washerDamage 0.150000000000
 washerInitialSpeed 60.000000000000
 washerMass 10.000000000000
 washerRadius 20.000000000000
