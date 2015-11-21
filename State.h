@@ -66,7 +66,8 @@ struct OilSlickPosition {
             : original(oilSlick),
               remainingTime(oilSlick->getRemainingLifetime()) { }
 
-    OilSlickPosition apply() const;
+    bool isAlive() const;
+    void apply();
 };
 
 struct WasherPosition {
@@ -82,7 +83,7 @@ struct WasherPosition {
               location(Point(washer->getX(), washer->getY())),
               velocity(Vec(washer->getSpeedX(), washer->getSpeedY())) { }
 
-    WasherPosition apply() const;
+    void apply();
 };
 
 struct State {
@@ -100,7 +101,8 @@ struct State {
 
     State(const World *world);
 
-    CarPosition getCarById(long long id) const;
+    const CarPosition& myCar() const;
 
-    State apply(const vector<Go>& moves) const;
+    void apply(const vector<Go>& moves);
+    void apply(const Go& move);
 };

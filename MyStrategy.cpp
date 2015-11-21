@@ -109,7 +109,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
         auto currentInfo = expectedPosByTick.find(world.getTick());
         if (currentInfo == expectedPosByTick.end()) return;
 
-        auto actual = currentState.getCarById(self.getId());
+        auto actual = currentState.myCar();
         auto predicted = currentInfo->second;
         cout << "tick " << world.getTick() << endl;
         cout << "  my position " << actual.toString() << endl;
@@ -138,17 +138,16 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
 
     const int lookahead = 1;
 
-    auto state = currentState;
+    auto state = State(currentState);
     for (int i = 0; i < lookahead; i++) {
         auto go = goDebugPhysicsPrediction(world.getTick() + i);
         vector<Go> moves(world.getCars().size(), go);
-        state = state.apply(moves);
+        state.apply(moves);
     }
 
-    auto expectedMyCar = state.getCarById(self.getId());
-    expectedPosByTick.insert({ world.getTick() + lookahead, expectedMyCar });
+    expectedPosByTick.insert({ world.getTick() + lookahead, state.myCar() });
 
-    vis->drawRect(expectedMyCar.rectangle());
+    vis->drawRect(state.myCar().rectangle());
 }
 
 // ----
@@ -181,7 +180,7 @@ Tile findCurrentTile(const Car& self) {
     const double tileSize = game.getTrackTileSize();
 
     CarPosition myCar(&self);
-    Point me = myCar.location + myCar.direction() * (game.getCarHeight() / 2);
+    Point me = myCar.location + myCar.direction() * (game.getCarWidth() / 2);
     double bestDist = 1e100;
     Tile result;
     for (unsigned long i = 0; i < map.width; i++) {
@@ -196,40 +195,48 @@ Tile findCurrentTile(const Car& self) {
     return result;
 };
 
-Go experimentalBruteForce(const World& world, const Point& nextWaypoint) {
-    static const unsigned long carsCount = world.getCars().size();
+vector<Go> collectMoves(
+        double engineFrom, double engineTo, double engineStep,
+        double wheelFrom, double wheelTo, double wheelStep,
+        bool brake
+) {
+    vector<Go> result;
+    for (double e = engineFrom; e <= engineTo; e += engineStep) {
+        for (double w = wheelFrom; w <= wheelTo; w += wheelStep) {
+            for (int b = 0; b <= brake; b++) {
+                result.emplace_back(e, w, b);
+            }
+        }
+    }
+    return result;
+}
 
+Go experimentalBruteForce(const World& world, const Point& nextWaypoint) {
     Go best(-1.0, 0.0);
     double bestDist = 1e100;
     auto startState = State(&world);
-    auto currentHealth = startState.cars.front().health;
+    auto currentHealth = startState.myCar().health;
 
-    for (double e1 = 0.0; e1 <= 1.0; e1 += 0.5) {
-        for (double w1 = -1.0; w1 <= 1.0; w1 += 0.25) {
-            for (bool brake : { false, true }) {
-                Go go(e1, w1, brake);
-                vector<Go> moves(carsCount, go);
-                auto state = startState;
-                for (int i = 0; i < 10; i++) {
-                    state = state.apply(moves);
-                    if (currentHealth - state.cars.front().health > 0.03) break;
-                }
-                if (currentHealth - state.cars.front().health > 0.03) continue;
+    auto firstMoves = collectMoves(0.0, 1.0, 0.5, -1.0, 1.0, 0.25, true);
+    auto secondMoves = collectMoves(0.0, 1.0, 0.5, 0.0, 0.0, 0.25, false);
 
-                for (double e2 = 0.0; e2 <= 1.0; e2 += 0.5) {
-                    Go future(e2, 0.0);
-                    vector<Go> futureMoves(carsCount, future);
-                    auto next = State(state);
-                    for (int i = 0; i < 20; i++) {
-                        next = next.apply(futureMoves);
-                        auto myFutureCar = next.cars.front();
-                        if (currentHealth - myFutureCar.health > 0.03) break;
-                        double curDist = myFutureCar.location.distanceTo(nextWaypoint);
-                        if (curDist < bestDist) {
-                            bestDist = curDist;
-                            best = go;
-                        }
-                    }
+    for (auto& firstMove : firstMoves) {
+        auto state = State(startState);
+        for (int i = 0; i < 10; i++) {
+            state.apply(firstMove);
+            if (currentHealth - state.myCar().health > 0.03) break;
+        }
+        if (currentHealth - state.myCar().health > 0.03) continue;
+
+        for (auto& secondMove : secondMoves) {
+            auto next = State(state);
+            for (int i = 0; i < 20; i++) {
+                next.apply(secondMove);
+                if (currentHealth - next.myCar().health > 0.03) break;
+                double curDist = next.myCar().location.distanceTo(nextWaypoint);
+                if (curDist < bestDist) {
+                    bestDist = curDist;
+                    best = firstMove;
                 }
             }
         }
@@ -243,15 +250,8 @@ Go experimentalBruteForce(const World& world, const Point& nextWaypoint) {
 }
 
 Point computeNextWaypoint(const Car& self, const World& world, const Game& game) {
-    auto& waypoints = world.getWaypoints();
-    for (unsigned long i = 0, size = waypoints.size(); i < size; i++) {
-        vis->drawText(Point(
-                waypoints[i][0] * game.getTrackTileSize() + 20.0,
-                waypoints[i][1] * game.getTrackTileSize() + 120.0
-        ), string("#") + to_string(i));
-    }
-
     auto curTile = findCurrentTile(self);
+    auto& waypoints = world.getWaypoints();
     auto nextWaypoint = Tile(self.getNextWaypointX(), self.getNextWaypointY());
     auto path = bestPath(curTile, nextWaypoint);
     if (path.size() >= 2) return path[1].toPoint();
@@ -261,6 +261,18 @@ Point computeNextWaypoint(const Car& self, const World& world, const Game& game)
     auto nextNextWaypoint = Tile(waypoints[j][0], waypoints[j][1]);
     path = bestPath(nextWaypoint, nextNextWaypoint);
     return path[0].toPoint();
+}
+
+void drawWaypoints(const World& world) {
+    auto& game = Const::getGame();
+
+    auto& waypoints = world.getWaypoints();
+    for (unsigned long i = 0, size = waypoints.size(); i < size; i++) {
+        vis->drawText(Point(
+                waypoints[i][0] * game.getTrackTileSize() + 20.0,
+                waypoints[i][1] * game.getTrackTileSize() + 120.0
+        ), string("#") + to_string(i));
+    }
 }
 
 void printMove(const Move& move) {
@@ -284,6 +296,8 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 
     auto& map = Map::getMap();
     map.update(world);
+
+    drawWaypoints(world);
 
 #ifdef DEBUG_PHYSICS_PREDICTION
     moveDebugPhysicsPrediction(self, world, game, move);

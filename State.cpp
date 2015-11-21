@@ -202,12 +202,11 @@ void collideCarWithWalls(CarPosition& car) {
     }
 }
 
-State State::apply(const vector<Go>& moves) const {
+void State::apply(const vector<Go>& moves) {
     const double updateFactor = 1.0 / ITERATION_COUNT_PER_STEP;
     // TODO: simulate all cars
     const bool simulateAllCars = false;
 
-    vector<CarPosition> cars(this->cars);
     vector<double> medianAngularSpeed(cars.size());
     for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
         auto& car = cars[i];
@@ -246,30 +245,31 @@ State State::apply(const vector<Go>& moves) const {
         }
     }
 
-    vector<OilSlickPosition> oilSlicks;
-    for (auto& oilSlick : this->oilSlicks) {
-        if (oilSlick.remainingTime > 0 /* or 1? */) {
-            oilSlicks.push_back(oilSlick.apply());
-        }
+    for (auto& oilSlick : oilSlicks) {
+        oilSlick.apply();
     }
 
     // TODO: washers should also move for several iterations per step
-    vector<WasherPosition> washers;
-    for (auto& washer : this->washers) {
+    for (auto& washer : washers) {
         // TODO: add the condition when washers disappear
-        washers.push_back(washer.apply());
+        washer.apply();
     }
-
-    return State(original, cars, oilSlicks, washers);
 }
 
-OilSlickPosition OilSlickPosition::apply() const {
-    return OilSlickPosition(this->original, this->remainingTime - 1);
+const CarPosition& State::myCar() const {
+    return cars.front();
 }
 
-WasherPosition WasherPosition::apply() const {
+bool OilSlickPosition::isAlive() const {
+    return remainingTime > 0 /* or 1? */;
+}
+
+void OilSlickPosition::apply() {
+    remainingTime--;
+}
+
+void WasherPosition::apply() {
     // TODO
-    return WasherPosition(this->original);
 }
 
 void CarPosition::advance(const Go& move, double medianAngularSpeed, double updateFactor) {
@@ -337,6 +337,10 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
     angularSpeed += medianAngularSpeed;
 }
 
+void State::apply(const Go& move) {
+    apply(vector<Go>(original->getCars().size(), move));
+}
+
 Rect CarPosition::rectangle() const {
     Vec forward = direction() * (original->getWidth() / 2);
     Vec sideways = direction().rotate(M_PI / 2) * (original->getHeight() / 2);
@@ -361,15 +365,4 @@ string CarPosition::toString() const {
             " nitros " << nitroCharges <<
             " nitro-cooldown " << nitroCooldown;
     return ss.str();
-}
-
-CarPosition State::getCarById(long long id) const {
-    auto car = find_if(cars.begin(), cars.end(), [&id](const CarPosition& it) {
-        return it.original->getId() == id;
-    });
-    if (car == cars.end()) {
-        cerr << "car with id " << id << " not found" << endl;
-        return cars.front();
-    }
-    return *car;
 }
