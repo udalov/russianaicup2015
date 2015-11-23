@@ -10,7 +10,6 @@
 
 using namespace std;
 
-const int ITERATION_COUNT_PER_STEP = 1; // TODO
 const double EPSILON = 1e-7;
 
 State::State(const World *world) : original(world) {
@@ -137,23 +136,37 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
     }
 }
 
-void collideCarWithWalls(CarPosition& car) {
+struct Walls {
+    vector<vector<vector<Segment>>> segments;
+    vector<vector<vector<Circle>>> corners;
+
+    Walls(const vector<vector<vector<Segment>>>& segments, const vector<vector<vector<Circle>>>& corners) :
+        segments(segments), corners(corners) { }
+};
+
+Walls computeWalls() {
     static Game& game = Const::getGame();
     static Map& map = Map::getMap();
     static const double margin = game.getTrackTileMargin();
     static const double tileSize = game.getTrackTileSize();
-    static const double carRadius = myHypot(game.getCarHeight() / 2, game.getCarWidth() / 2);
+
+    auto segments = vector<vector<vector<Segment>>>(map.width, {
+            vector<vector<Segment>>(map.height, {
+                vector<Segment>(4, Segment { Point(), Point() })
+            })
+    });
+    auto circles = vector<vector<vector<Circle>>>(map.width, {
+            vector<vector<Circle>>(map.height, {
+                vector<Circle>(4, Circle { Point(), double() })
+            })
+    });
 
     static const int dx[] = {1, 0, -1, 0};
     static const int dy[] = {0, 1, 0, -1};
 
-    auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
-    auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
-    for (auto tx = tileX; tx <= min(tileX + 1, map.width - 1); tx++) {
-        for (auto ty = tileY; ty <= min(tileY + 1, map.height - 1); ty++) {
-            auto tile = map.graph[tx][ty];
+    for (unsigned long tx = 0; tx < map.width; tx++) {
+        for (unsigned long ty = 0; ty < map.height; ty++) {
             for (int d = 0; d < 4; d++) {
-                if (tile & (1 << d)) continue;
                 auto p1 = Point(
                         (tx + max(dx[d] + dy[d], 0)) * tileSize - dx[d] * margin,
                         (ty + max(dy[d] - dx[d], 0)) * tileSize - dy[d] * margin
@@ -162,9 +175,41 @@ void collideCarWithWalls(CarPosition& car) {
                         (tx + max(dx[d] - dy[d], 0)) * tileSize - dx[d] * margin,
                         (ty + max(dx[d] + dy[d], 0)) * tileSize - dy[d] * margin
                 );
-                auto wall = Segment(p1, p2);
+                segments[tx][ty][d] = Segment(p1, p2);
+
+                auto p = Point(
+                        (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
+                        (ty + (dx[d] + dy[d] + 1.) / 2) * tileSize
+                );
+                circles[tx][ty][d] = Circle(p, margin);
+            }
+        }
+    }
+
+    return Walls(segments, circles);
+}
+
+void collideCarWithWalls(CarPosition& car) {
+    static Game& game = Const::getGame();
+    static Map& map = Map::getMap();
+    static const double margin = game.getTrackTileMargin();
+    static const double tileSize = game.getTrackTileSize();
+    static const double carRadius = myHypot(game.getCarHeight() / 2, game.getCarWidth() / 2);
+
+    static auto allWalls = computeWalls();
+
+    auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
+    auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
+    CollisionInfo collision;
+    for (auto tx = tileX; tx <= tileX + 1 && tx < map.width; tx++) {
+        for (auto ty = tileY; ty <= tileY + 1 && ty < map.height; ty++) {
+            auto tile = map.graph[tx][ty];
+
+            auto& wallSegments = allWalls.segments[tx][ty];
+            for (int d = 0; d < 4; d++) {
+                if (tile & (1 << d)) continue;
+                auto& wall = wallSegments[d];
                 if (wall.distanceFrom(car.location) > carRadius + EPSILON) continue;
-                CollisionInfo collision;
                 if (collideRectAndSegment(car.rectangle(), wall, collision)) {
                     /*
                     if (D) {
@@ -177,17 +222,13 @@ void collideCarWithWalls(CarPosition& car) {
                 }
             }
 
+            auto& wallCorners = allWalls.corners[tx][ty];
             for (int d = 0; d < 4; d++) {
                 if (!(tile & (1 << d)) || !(tile & (1 << ((d + 1) & 3)))) continue;
-                auto p = Point(
-                        (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
-                        (ty + (dx[d] + dy[d] + 1.) / 2) * tileSize
-                );
-                if (car.location.distanceTo(p) > margin + carRadius + EPSILON) continue;
+                auto& corner = wallCorners[d];
+                if (car.location.distanceTo(corner.center) > margin + carRadius + EPSILON) continue;
                 auto rect = car.rectangle();
-                if (rect.distanceFrom(p) > margin + EPSILON) continue;
-                auto corner = Circle(p, margin);
-                CollisionInfo collision;
+                if (rect.distanceFrom(corner.center) > margin + EPSILON) continue;
                 if (collideCircleAndRect(rect, corner, collision)) {
                     /*
                     if (D) {
@@ -204,17 +245,15 @@ void collideCarWithWalls(CarPosition& car) {
 }
 
 void State::apply(const vector<Go>& moves) {
-    static const double updateFactor = 1.0 / ITERATION_COUNT_PER_STEP;
     // TODO: simulate all cars
-    static const bool simulateAllCars = false;
+    static const bool carsSize = 1;
 
     static auto& game = Const::getGame();
     static const double carAngularSpeedFactor = game.getCarAngularSpeedFactor();
     static const int nitroDurationTicks = game.getNitroDurationTicks();
     static const double nitroEnginePowerFactor = game.getNitroEnginePowerFactor();
 
-    vector<double> medianAngularSpeed(cars.size());
-    for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
+    for (unsigned long i = 0; i < carsSize; i++) {
         auto& car = cars[i];
         auto& move = moves[i];
 
@@ -232,32 +271,27 @@ void State::apply(const vector<Go>& moves) {
 
         car.wheelTurn = updateWheelTurn(car.wheelTurn, move.wheelTurn);
         car.angularSpeed = car.wheelTurn * carAngularSpeedFactor * (car.velocity * car.direction());
-
-        medianAngularSpeed[i] = car.angularSpeed;
     }
 
-    for (int iteration = 1; iteration <= ITERATION_COUNT_PER_STEP; iteration++) {
-        for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
-            cars[i].advance(moves[i], medianAngularSpeed[i], updateFactor);
-        }
+    for (unsigned long i = 0; i < carsSize; i++) {
+        cars[i].advance(moves[i]);
+    }
 
-        for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
-            collideCarWithWalls(cars[i]);
-        }
+    for (unsigned long i = 0; i < carsSize; i++) {
+        collideCarWithWalls(cars[i]);
     }
 
     for (auto& oilSlick : oilSlicks) {
         oilSlick.apply();
     }
 
-    // TODO: washers should also move for several iterations per step
     for (auto& washer : washers) {
         // TODO: add the condition when washers disappear
         washer.apply();
     }
 }
 
-const CarPosition& State::myCar() const {
+const CarPosition& State::me() const {
     return cars.front();
 }
 
@@ -273,25 +307,22 @@ void WasherPosition::apply() {
     // TODO
 }
 
-void CarPosition::advance(const Go& move, double medianAngularSpeed, double updateFactor) {
+void CarPosition::advance(const Go& move) {
     static auto& game = Const::getGame();
     static const double buggyEngineRearAcceleration = game.getBuggyEngineRearPower() / game.getBuggyMass();
     static const double buggyEngineForwardAcceleration = game.getBuggyEngineForwardPower() / game.getBuggyMass();
 
-    // Assuming updateFactor is const
-    static const double airFriction = pow(1.0 - game.getCarMovementAirFrictionFactor(), updateFactor);
-    static const double lengthwiseVelocityChangeBase = game.getCarLengthwiseMovementFrictionFactor() * updateFactor;
-    static const double crosswiseVelocityChange = game.getCarCrosswiseMovementFrictionFactor() * updateFactor;
-    static const double rotationAirFriction = pow(1.0 - game.getCarRotationAirFrictionFactor(), updateFactor);
-    static const double rotationFrictionFactor = game.getCarRotationFrictionFactor() * updateFactor;
+    static const double airFriction = 1.0 - game.getCarMovementAirFrictionFactor();
+    static const double lengthwiseVelocityChangeBase = game.getCarLengthwiseMovementFrictionFactor();
+    static const double crosswiseVelocityChange = game.getCarCrosswiseMovementFrictionFactor();
 
     // Location
 
-    location += velocity * updateFactor;
+    location += velocity;
 
     if (!move.brake) {
         auto acceleration = enginePower * (enginePower < 0 ? buggyEngineRearAcceleration : buggyEngineForwardAcceleration);
-        velocity += direction() * acceleration * updateFactor;
+        velocity += direction() * acceleration;
     }
 
     // Air friction
@@ -319,24 +350,7 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
 
     // Angle
 
-    angle += angularSpeed * updateFactor;
-
-    // Rotation air friction
-
-    angularSpeed -= medianAngularSpeed;
-
-    angularSpeed *= rotationAirFriction;
-
-    if (abs(angularSpeed) < EPSILON) angularSpeed = 0.0;
-
-    // Rotation friction
-
-    angularSpeed =
-            angularSpeed > 0.0
-            ? max(angularSpeed - rotationFrictionFactor, 0.0)
-            : min(angularSpeed + rotationFrictionFactor, 0.0);
-
-    angularSpeed += medianAngularSpeed;
+    angle += angularSpeed;
 }
 
 void State::apply(const Go& move) {

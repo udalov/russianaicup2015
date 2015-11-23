@@ -55,16 +55,18 @@ VisClient::VisClient(int port) {
     }
 
     valid = true;
-    cerr << "vis client socket opened on port " << port << endl;
+    // cerr << "vis client socket opened on port " << port << endl;
 }
 
 void VisClient::drawLine(const Point& first, const Point& second) {
+    if (!valid) return;
     ostringstream ss;
     ss << "line " << first.x << " " << first.y << " " << second.x << " " << second.y;
     send(ss.str());
 }
 
 void VisClient::drawPoly(const vector<Point>& points) {
+    if (!valid) return;
     for (unsigned long i = 0; i < points.size(); i++) {
         drawLine(points[i], points[i + 1 == points.size() ? 0 : i + 1]);
     }
@@ -75,18 +77,21 @@ void VisClient::drawRect(const Rect& rectangle) {
 }
 
 void VisClient::drawCircle(const Point& center, double radius) {
+    if (!valid) return;
     ostringstream ss;
     ss << "circle " << center.x << " " << center.y << " " << radius;
     send(ss.str());
 }
 
 void VisClient::drawText(const Point& point, const string& text) {
+    if (!valid) return;
     ostringstream ss;
     ss << "text " << point.x << " " << point.y << " " << text;
     send(ss.str());
 }
 
 void VisClient::drawTextStatic(const Point& point, const string& text) {
+    if (!valid) return;
     ostringstream ss;
     ss << "text-static " << (int) point.x << " " << (int) point.y << " " << text;
     send(ss.str());

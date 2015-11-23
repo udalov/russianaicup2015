@@ -112,7 +112,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
         auto currentInfo = expectedPosByTick.find(world.getTick());
         if (currentInfo == expectedPosByTick.end()) return;
 
-        auto actual = currentState.myCar();
+        auto actual = currentState.me();
         auto predicted = currentInfo->second;
         cout << "tick " << world.getTick() << endl;
         cout << "  my position " << actual.toString() << endl;
@@ -148,9 +148,9 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
         state.apply(moves);
     }
 
-    expectedPosByTick.insert({ world.getTick() + lookahead, state.myCar() });
+    expectedPosByTick.insert({ world.getTick() + lookahead, state.me() });
 
-    vis->drawRect(state.myCar().rectangle());
+    vis->drawRect(state.me().rectangle());
 }
 
 // ----
@@ -182,7 +182,7 @@ Tile findCurrentTile(const CarPosition& car) {
     static const double carWidth = Const::getGame().getCarWidth();
 
     Point me = car.location + car.direction() * (carWidth / 2);
-    return Tile((int)(me.x / tileSize), (int)(me.y / tileSize));
+    return Tile(static_cast<int>(me.x / tileSize), static_cast<int>(me.y / tileSize));
 };
 
 vector<Go> collectMoves(
@@ -220,10 +220,10 @@ Go experimentalBruteForce(const World& world, const vector<Tile>& path) {
     Go bestSecondMove(best);
     double bestScore = -1e100;
     auto startState = State(&world);
-    auto startHealth = startState.myCar().health;
+    auto startHealth = startState.me().health;
 
     auto firstMoves = collectMoves(-1.0, 1.0, 0.5, -1.0, 1.0, 0.25, true);
-    auto secondMovesBase = collectMoves(0.0, 1.0, 0.5, 0.0, 0.0, 0.25, false);
+    auto secondMovesBase = collectMoves(0.0, 1.0, 0.5, -1.0, 1.0, 1.0, false);
 
     vector<Segment> pathSegment;
     for (unsigned long i = 0, size = path.size(); i < size - 1; i++) {
@@ -246,10 +246,10 @@ Go experimentalBruteForce(const World& world, const vector<Tile>& path) {
                 next.apply(secondMove);
             }
 
-            auto& me = next.myCar();
+            auto& me = next.me();
 
             auto curTile = findCurrentTile(me);
-            unsigned long pathIndex = find(path.begin(), path.end(), findCurrentTile(state.myCar())) - path.begin() + 1;
+            unsigned long pathIndex = find(path.begin(), path.end(), findCurrentTile(state.me())) - path.begin() + 1;
             if (curTile == path[pathIndex] && pathIndex + 1 < path.size()) pathIndex++;
             auto& nextSegment = pathSegment[pathIndex - 1];
 
@@ -308,6 +308,7 @@ Go experimentalBruteForce(const World& world, const vector<Tile>& path) {
         }
     }
 
+    /*
     {
         auto state = State(startState);
         for (int i = 0; i < 15; i++) {
@@ -316,9 +317,10 @@ Go experimentalBruteForce(const World& world, const vector<Tile>& path) {
         for (int i = 0; i < 20; i++) {
             state.apply(bestSecondMove);
         }
-        vis->drawRect(state.myCar().rectangle());
+        vis->drawRect(state.me().rectangle());
         cout << "tick " << world.getTick() << " best-score " << bestScore << " #1 " << best.toString() << " #2 " << bestSecondMove.toString() << endl;
     }
+    */
 
     return best;
 }
@@ -391,6 +393,8 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
     auto& map = Map::getMap();
     map.update(world);
 
+    if (self.isFinishedTrack()) return;
+
 #ifdef DEBUG_PHYSICS_PREDICTION
     moveDebugPhysicsPrediction(self, world, game, move);
     return;
@@ -412,7 +416,9 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
     Go best = experimentalBruteForce(world, path);
     best.applyTo(move);
 
+#ifdef VISUALIZE
     printMove(move);
+#endif
 }
 
 MyStrategy::MyStrategy() { }

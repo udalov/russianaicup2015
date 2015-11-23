@@ -48,7 +48,7 @@ struct CarPosition {
 
     Vec direction() const { return Vec(angle); }
 
-    void advance(const Go& move, double medianAngularSpeed, double updateFactor);
+    void advance(const Go& move);
 
     Rect rectangle() const;
 
@@ -101,7 +101,7 @@ struct State {
 
     State(const World *world);
 
-    const CarPosition& myCar() const;
+    const CarPosition& me() const;
 
     void apply(const vector<Go>& moves);
     void apply(const Go& move);
