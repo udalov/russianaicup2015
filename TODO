@@ -1,2 +1,6 @@
 major:
-- account number of turns in the path finder
+- account number of turns, number of bonuses in the path finder
+- get away from the walls, as physics prediction is not perfect there
+
+minor:
+- don't do anything if car has finished

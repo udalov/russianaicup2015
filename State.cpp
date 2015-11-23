@@ -10,7 +10,7 @@
 
 using namespace std;
 
-const int ITERATION_COUNT_PER_STEP = 2;
+const int ITERATION_COUNT_PER_STEP = 1; // TODO
 const double EPSILON = 1e-7;
 
 State::State(const World *world) : original(world) {
@@ -59,8 +59,7 @@ Vec3D toVec3D(const Point& p1, const Point& p2) {
 void resolveImpact(
         const CollisionInfo& collision, CarPosition& car, const Vec3D& normal, const Vec3D& vecBC, const Vec3D& relativeVelocity
 ) {
-    static Game& game = Const::getGame();
-    static const double invertedCarMass = 1.0 / game.getBuggyMass();
+    static const double invertedCarMass = 1.0 / Const::getGame().getBuggyMass();
     static const double momentumTransferFactor = 0.3; // ?!
 
     double invertedCarAngularMass = car.angularSpeed * invertedCarMass / car.velocity.length();
@@ -87,8 +86,7 @@ void resolveImpact(
 void resolveSurfaceFriction(
         const CollisionInfo& collision, CarPosition& car, const Vec3D& normal, const Vec3D& vecBC, const Vec3D& relativeVelocity
 ) {
-    static Game& game = Const::getGame();
-    static const double invertedCarMass = 1.0 / game.getBuggyMass();
+    static const double invertedCarMass = 1.0 / Const::getGame().getBuggyMass();
     static const double surfaceFrictionFactor = 0.015; // ?!
 
     double invertedCarAngularMass = car.angularSpeed * invertedCarMass / car.velocity.length();
@@ -128,6 +126,7 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
     auto angularSpeedBC = Vec3D(0.0, 0.0, car.angularSpeed) ^ vecBC;
     auto velocityBC = toVec3D(car.velocity) + angularSpeedBC;
     auto relativeVelocity = -velocityBC;
+    // if (D) cout << "vec-bc " << vecBC.toString() << " relative-velocity " << relativeVelocity.toString() << endl;
     if (relativeVelocity * normal < EPSILON) {
         // TODO: optimize
         resolveImpact(collision, car, normal, vecBC, relativeVelocity);
@@ -148,8 +147,6 @@ void collideCarWithWalls(CarPosition& car) {
     static const int dx[] = {1, 0, -1, 0};
     static const int dy[] = {0, 1, 0, -1};
 
-    auto rect = car.rectangle();
-
     auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
     auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
     for (auto tx = tileX; tx <= min(tileX + 1, map.width - 1); tx++) {
@@ -168,10 +165,11 @@ void collideCarWithWalls(CarPosition& car) {
                 auto wall = Segment(p1, p2);
                 if (wall.distanceFrom(car.location) > carRadius + EPSILON) continue;
                 CollisionInfo collision;
-                if (collideRectAndSegment(rect, wall, collision)) {
+                if (collideRectAndSegment(car.rectangle(), wall, collision)) {
                     /*
                     if (D) {
                         cout << "segment collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
+                        cout << "  " << car.toString() << endl;
                         cout << "  (with segment " << wall.p1.toString() << " -> " << wall.p2.toString() << ")" << endl;
                     }
                     */
@@ -185,6 +183,8 @@ void collideCarWithWalls(CarPosition& car) {
                         (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
                         (ty + (dx[d] + dy[d] + 1.) / 2) * tileSize
                 );
+                if (car.location.distanceTo(p) > margin + carRadius + EPSILON) continue;
+                auto rect = car.rectangle();
                 if (rect.distanceFrom(p) > margin + EPSILON) continue;
                 auto corner = Circle(p, margin);
                 CollisionInfo collision;
@@ -192,7 +192,8 @@ void collideCarWithWalls(CarPosition& car) {
                     /*
                     if (D) {
                         cout << "corner collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
-                        cout << "  (me at " << car.location.toString() << " with corner at " << p.toString() << ")" << endl;
+                        cout << "  " << car.toString() << endl;
+                        cout << "  (with corner at " << p.toString() << ")" << endl;
                     }
                     */
                     resolveWallCollision(collision, car);
@@ -203,9 +204,14 @@ void collideCarWithWalls(CarPosition& car) {
 }
 
 void State::apply(const vector<Go>& moves) {
-    const double updateFactor = 1.0 / ITERATION_COUNT_PER_STEP;
+    static const double updateFactor = 1.0 / ITERATION_COUNT_PER_STEP;
     // TODO: simulate all cars
-    const bool simulateAllCars = false;
+    static const bool simulateAllCars = false;
+
+    static auto& game = Const::getGame();
+    static const double carAngularSpeedFactor = game.getCarAngularSpeedFactor();
+    static const int nitroDurationTicks = game.getNitroDurationTicks();
+    static const double nitroEnginePowerFactor = game.getNitroEnginePowerFactor();
 
     vector<double> medianAngularSpeed(cars.size());
     for (unsigned long i = 0, size = simulateAllCars ? cars.size() : 1; i < size; i++) {
@@ -214,23 +220,18 @@ void State::apply(const vector<Go>& moves) {
 
         if (move.useNitro && car.nitroCharges > 0 && car.nitroCooldown == 0) {
             car.nitroCharges--;
-            car.nitroCooldown = Const::getGame().getNitroDurationTicks();
+            car.nitroCooldown = nitroDurationTicks;
         }
 
         if (car.nitroCooldown > 0) {
             car.nitroCooldown--;
-            car.enginePower = Const::getGame().getNitroEnginePowerFactor();
+            car.enginePower = nitroEnginePowerFactor;
         } else {
-            car.enginePower = updateEnginePower(
-                    car.enginePower == Const::getGame().getNitroEnginePowerFactor() ? 1.0 : car.enginePower,
-                    move.enginePower
-            );
+            car.enginePower = updateEnginePower(car.enginePower == nitroEnginePowerFactor ? 1.0 : car.enginePower, move.enginePower);
         }
 
         car.wheelTurn = updateWheelTurn(car.wheelTurn, move.wheelTurn);
-        car.angularSpeed =
-                car.wheelTurn * Const::getGame().getCarAngularSpeedFactor() *
-                (car.velocity * car.direction());
+        car.angularSpeed = car.wheelTurn * carAngularSpeedFactor * (car.velocity * car.direction());
 
         medianAngularSpeed[i] = car.angularSpeed;
     }
@@ -273,29 +274,33 @@ void WasherPosition::apply() {
 }
 
 void CarPosition::advance(const Go& move, double medianAngularSpeed, double updateFactor) {
-    auto game = Const::getGame();
+    static auto& game = Const::getGame();
+    static const double buggyEngineRearAcceleration = game.getBuggyEngineRearPower() / game.getBuggyMass();
+    static const double buggyEngineForwardAcceleration = game.getBuggyEngineForwardPower() / game.getBuggyMass();
+
+    // Assuming updateFactor is const
+    static const double airFriction = pow(1.0 - game.getCarMovementAirFrictionFactor(), updateFactor);
+    static const double lengthwiseVelocityChangeBase = game.getCarLengthwiseMovementFrictionFactor() * updateFactor;
+    static const double crosswiseVelocityChange = game.getCarCrosswiseMovementFrictionFactor() * updateFactor;
+    static const double rotationAirFriction = pow(1.0 - game.getCarRotationAirFrictionFactor(), updateFactor);
+    static const double rotationFrictionFactor = game.getCarRotationFrictionFactor() * updateFactor;
 
     // Location
 
     location += velocity * updateFactor;
 
     if (!move.brake) {
-        auto acceleration = enginePower *
-                            (enginePower < 0 ? game.getBuggyEngineRearPower() : game.getBuggyEngineForwardPower()) /
-                            game.getBuggyMass();
+        auto acceleration = enginePower * (enginePower < 0 ? buggyEngineRearAcceleration : buggyEngineForwardAcceleration);
         velocity += direction() * acceleration * updateFactor;
     }
 
     // Air friction
 
-    const double airFriction = pow(1.0 - game.getCarMovementAirFrictionFactor(), updateFactor);
     velocity *= airFriction;
 
     // Movement friction
 
-    const double lengthwiseVelocityChange =
-            (move.brake ? game.getCarCrosswiseMovementFrictionFactor() : game.getCarLengthwiseMovementFrictionFactor())
-            * updateFactor;
+    auto lengthwiseVelocityChange = move.brake ? crosswiseVelocityChange : lengthwiseVelocityChangeBase;
     auto lengthwiseUnitVector = direction();
     auto lengthwiseVelocityPart = velocity * lengthwiseUnitVector;
     lengthwiseVelocityPart =
@@ -303,8 +308,7 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
             ? max(lengthwiseVelocityPart - lengthwiseVelocityChange, 0.0)
             : min(lengthwiseVelocityPart + lengthwiseVelocityChange, 0.0);
 
-    const double crosswiseVelocityChange = game.getCarCrosswiseMovementFrictionFactor() * updateFactor;
-    auto crosswiseUnitVector = Vec(angle + M_PI / 2);
+    auto crosswiseUnitVector = Vec(-lengthwiseUnitVector.y, lengthwiseUnitVector.x);
     auto crosswiseVelocityPart = velocity * crosswiseUnitVector;
     crosswiseVelocityPart =
             crosswiseVelocityPart >= 0.0
@@ -321,14 +325,12 @@ void CarPosition::advance(const Go& move, double medianAngularSpeed, double upda
 
     angularSpeed -= medianAngularSpeed;
 
-    const double rotationAirFriction = pow(1.0 - game.getCarRotationAirFrictionFactor(), updateFactor);
     angularSpeed *= rotationAirFriction;
 
     if (abs(angularSpeed) < EPSILON) angularSpeed = 0.0;
 
     // Rotation friction
 
-    const double rotationFrictionFactor = game.getCarRotationFrictionFactor() * updateFactor;
     angularSpeed =
             angularSpeed > 0.0
             ? max(angularSpeed - rotationFrictionFactor, 0.0)

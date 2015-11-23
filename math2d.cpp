@@ -157,6 +157,10 @@ double mySqrt(double x) {
     return sqrt(x);
 }
 
+double sqr(double x) {
+    return x * x;
+}
+
 double normalizeAngle(double alpha) {
     while (alpha < -M_PI) alpha += 2 * M_PI;
     while (alpha > M_PI) alpha -= 2 * M_PI;
@@ -203,6 +207,10 @@ double Rect::distanceFrom(const Point& point) const {
         result = min(result, Segment(points[i], points[i + 1 == size ? 0 : i + 1]).distanceFrom(point));
     }
     return result;
+}
+
+Point Segment::center() const {
+    return Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
 }
 
 double Segment::distanceFrom(const Point& point) const {

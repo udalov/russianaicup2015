@@ -6,6 +6,7 @@
 #include "State.h"
 #include "VisClient.h"
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
@@ -174,25 +175,12 @@ void drawMap() {
 
 // ----
 
-Tile findCurrentTile(const Car& self) {
-    auto& map = Map::getMap();
-    auto& game = Const::getGame();
-    const double tileSize = game.getTrackTileSize();
+Tile findCurrentTile(const CarPosition& car) {
+    static const double tileSize = Const::getGame().getTrackTileSize();
+    static const double carWidth = Const::getGame().getCarWidth();
 
-    CarPosition myCar(&self);
-    Point me = myCar.location + myCar.direction() * (game.getCarWidth() / 2);
-    double bestDist = 1e100;
-    Tile result;
-    for (unsigned long i = 0; i < map.width; i++) {
-        for (unsigned long j = 0; j < map.height; j++) {
-            double curDist = abs(me.x - (i + 0.5) * tileSize) + abs(me.y - (j + 0.5) * tileSize);
-            if (curDist < bestDist) {
-                bestDist = curDist;
-                result = Tile(i, j);
-            }
-        }
-    }
-    return result;
+    Point me = car.location + car.direction() * (carWidth / 2);
+    return Tile((int)(me.x / tileSize), (int)(me.y / tileSize));
 };
 
 vector<Go> collectMoves(
@@ -204,75 +192,149 @@ vector<Go> collectMoves(
     for (double e = engineFrom; e <= engineTo; e += engineStep) {
         for (double w = wheelFrom; w <= wheelTo; w += wheelStep) {
             for (int b = 0; b <= brake; b++) {
-                result.emplace_back(e, w, b);
+                result.emplace_back(e, w, (bool) b);
             }
         }
     }
     return result;
 }
 
-Go experimentalBruteForce(const World& world, const Point& nextWaypoint) {
-    Go best(-1.0, 0.0);
-    double bestDist = 1e100;
-    auto startState = State(&world);
-    auto currentHealth = startState.myCar().health;
+Segment segmentBetweenTiles(const Tile& tile1, const Tile& tile2) {
+    static const double angle = M_PI / 6;
+    static const double coeff = 0.5 / myCos(angle);
+    auto p1 = tile1.toPoint();
+    auto p2 = tile2.toPoint();
+    auto v = Vec(p1, p2) * coeff;
+    return Segment(p1 + v.rotate(angle), p1 + v.rotate(-angle));
+}
 
-    auto firstMoves = collectMoves(0.0, 1.0, 0.5, -1.0, 1.0, 0.25, true);
-    auto secondMoves = collectMoves(0.0, 1.0, 0.5, 0.0, 0.0, 0.25, false);
+bool isFacingTowards(const CarPosition& car, const Segment& segment) {
+    auto& p = car.location;
+    return (Vec(p, segment.p1) ^ car.velocity) < 0 && (car.velocity ^ Vec(p, segment.p2)) < 0;
+}
+
+Go experimentalBruteForce(const World& world, const vector<Tile>& path) {
+    Go best(-1.0, 0.0);
+    Go bestSecondMove(best);
+    double bestScore = -1e100;
+    auto startState = State(&world);
+    auto startHealth = startState.myCar().health;
+
+    auto firstMoves = collectMoves(-1.0, 1.0, 0.5, -1.0, 1.0, 0.25, true);
+    auto secondMovesBase = collectMoves(0.0, 1.0, 0.5, 0.0, 0.0, 0.25, false);
+
+    vector<Segment> pathSegment;
+    for (unsigned long i = 0, size = path.size(); i < size - 1; i++) {
+        pathSegment.push_back(segmentBetweenTiles(path[i], path[i + 1]));
+    }
+
+    vis->drawLine(pathSegment.front().p1, pathSegment.front().p2);
 
     for (auto& firstMove : firstMoves) {
         auto state = State(startState);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 15; i++) {
             state.apply(firstMove);
-            if (currentHealth - state.myCar().health > 0.03) break;
         }
-        if (currentHealth - state.myCar().health > 0.03) continue;
 
+        auto secondMoves = secondMovesBase;
+        secondMoves.push_back(firstMove);
         for (auto& secondMove : secondMoves) {
             auto next = State(state);
-            for (int i = 0; i < 20; i++) {
+            for (int j = 0; j < 30; j++) {
                 next.apply(secondMove);
-                if (currentHealth - next.myCar().health > 0.03) break;
-                double curDist = next.myCar().location.distanceTo(nextWaypoint);
-                if (curDist < bestDist) {
-                    bestDist = curDist;
-                    best = firstMove;
+            }
+
+            auto& me = next.myCar();
+
+            auto curTile = findCurrentTile(me);
+            unsigned long pathIndex = find(path.begin(), path.end(), findCurrentTile(state.myCar())) - path.begin() + 1;
+            if (curTile == path[pathIndex] && pathIndex + 1 < path.size()) pathIndex++;
+            auto& nextSegment = pathSegment[pathIndex - 1];
+
+            auto curHealthDelta = min(me.health - startHealth + 0.03, 0.0);
+
+            /*
+            auto curCenter = pathIndex >= 2 ? pathSegment[pathIndex - 2].center() : path.front().toPoint();
+            auto nextCenter = nextSegment.center();
+            auto centerLine = Vec(curCenter, nextCenter);
+            auto travelled = pathIndex + Vec(curCenter, me.location).projection(centerLine) / centerLine.length();
+            */
+
+            double travelled;
+            {
+                auto point = nextSegment.center();
+                auto nextNextCenter = pathSegment[pathIndex].center();
+                auto d1 = nextSegment.p1.distanceTo(nextNextCenter);
+                auto d2 = nextSegment.p2.distanceTo(nextNextCenter);
+                bool nearest = false;
+                if (pathIndex >= 2) {
+                    auto curCenter = pathSegment[pathIndex - 2].center();
+                    if (abs(nextSegment.p1.distanceTo(curCenter) - nextSegment.p2.distanceTo(curCenter)) > 1e-2) {
+                        nearest = true;
+                    }
                 }
+                if (abs(d1 - d2) > 1e-2) {
+                    point = ((d1 < d2) == nearest) ? nextSegment.p1 : nextSegment.p2;
+                }
+
+                travelled = pathIndex * 1e3 - point.distanceTo(me.location);
+            }
+
+            double curScore = curHealthDelta * 1e9 + travelled * 1e3;
+
+            if (!isFacingTowards(me, nextSegment)) {
+                auto dir = me.direction();
+                auto minAngle = min(
+                        abs(dir.angleTo(Vec(me.location, nextSegment.p1))),
+                        abs(dir.angleTo(Vec(me.location, nextSegment.p2)))
+                );
+                curScore -= minAngle * 50.0;
+            }
+
+            curScore += me.velocity.projection(Vec(pathSegment[pathIndex - 2].center(), nextSegment.center())) * 40.0;
+
+            /*
+            double angleDiff = Vec(pathSegment[pathIndex - 2].center(), nextSegment.center()).angleTo(me.direction());
+            curScore -= abs(angleDiff) * 1000.0;
+            */
+
+            if (curScore > bestScore) {
+                bestScore = curScore;
+                best = firstMove;
+                bestSecondMove = secondMove;
             }
         }
     }
 
-    if (bestDist == 1e100) {
-        cerr << "no best move on tick " << world.getTick() << endl;
+    {
+        auto state = State(startState);
+        for (int i = 0; i < 15; i++) {
+            state.apply(best);
+        }
+        for (int i = 0; i < 20; i++) {
+            state.apply(bestSecondMove);
+        }
+        vis->drawRect(state.myCar().rectangle());
+        cout << "tick " << world.getTick() << " best-score " << bestScore << " #1 " << best.toString() << " #2 " << bestSecondMove.toString() << endl;
     }
 
     return best;
 }
 
-Point computeNextWaypoint(const Car& self, const World& world, const Game& game) {
-    auto curTile = findCurrentTile(self);
+vector<Tile> computePath(const Car& self, const World& world, const Game& game) {
     auto& waypoints = world.getWaypoints();
-    auto nextWaypoint = Tile(self.getNextWaypointX(), self.getNextWaypointY());
-    auto path = bestPath(curTile, nextWaypoint);
-    if (path.size() >= 2) return path[1].toPoint();
-
-    unsigned long j = self.getNextWaypointIndex();
-    j = (j + 1) % waypoints.size();
-    auto nextNextWaypoint = Tile(waypoints[j][0], waypoints[j][1]);
-    path = bestPath(nextWaypoint, nextNextWaypoint);
-    return path[0].toPoint();
-}
-
-void drawWaypoints(const World& world) {
-    auto& game = Const::getGame();
-
-    auto& waypoints = world.getWaypoints();
-    for (unsigned long i = 0, size = waypoints.size(); i < size; i++) {
-        vis->drawText(Point(
-                waypoints[i][0] * game.getTrackTileSize() + 20.0,
-                waypoints[i][1] * game.getTrackTileSize() + 120.0
-        ), string("#") + to_string(i));
+    int i = self.getNextWaypointIndex();
+    Tile start = findCurrentTile(CarPosition(&self));
+    vector<Tile> result;
+    result.push_back(start);
+    for (int steps = 0; steps < 5; steps++) {
+        Tile finish = Tile(waypoints[i][0], waypoints[i][1]);
+        auto path = bestPath(start, finish);
+        result.insert(result.end(), path.begin() + 1, path.end());
+        start = finish;
+        i = (i + 1) % waypoints.size();
     }
+    return result;
 }
 
 void printMove(const Move& move) {
@@ -297,8 +359,6 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
     auto& map = Map::getMap();
     map.update(world);
 
-    drawWaypoints(world);
-
 #ifdef DEBUG_PHYSICS_PREDICTION
     moveDebugPhysicsPrediction(self, world, game, move);
     return;
@@ -309,12 +369,9 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         return;
     }
 
-    Point nextWaypoint = computeNextWaypoint(self, world, game);
+    auto path = computePath(self, world, game);
 
-    vis->drawCircle(nextWaypoint, 100);
-    vis->drawCircle(nextWaypoint, 150);
-
-    Go best = experimentalBruteForce(world, nextWaypoint);
+    Go best = experimentalBruteForce(world, path);
     best.applyTo(move);
 
     printMove(move);

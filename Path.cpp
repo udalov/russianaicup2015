@@ -2,6 +2,7 @@
 #include "Const.h"
 #include "Map.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -29,7 +30,7 @@ vector<Tile> bestPath(const Tile& start, const Tile& finish) {
     static const int dy[] = {0, 1, 0, -1};
     auto& map = Map::getMap();
 
-    if (start == finish) return vector<Tile>(1, finish);
+    if (start == finish) return { start, finish };
     
     int startEnc = (start.x << 8) + start.y;
     int finishEnc = (finish.x << 8) + finish.y;
@@ -49,6 +50,7 @@ vector<Tile> bestPath(const Tile& start, const Tile& finish) {
                 if (prev[v] == startEnc) break;
                 v = prev[v];
             }
+            result.push_back(start);
             reverse(result.begin(), result.end());
             return result;
         }
@@ -65,5 +67,5 @@ vector<Tile> bestPath(const Tile& start, const Tile& finish) {
     }
     
     cerr << "path not found from " << start.toString() << " to " << finish.toString() << endl;
-    return vector<Tile>(1, finish);
+    return { start, finish };
 }

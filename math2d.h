@@ -144,6 +144,8 @@ struct Segment {
     Segment(const Point& p1, const Point& p2) : p1(p1), p2(p2) { }
     Segment(const Segment& other) : p1(other.p1), p2(other.p2) { }
 
+    Point center() const;
+
     // TODO (!): test
     double distanceFrom(const Point& point) const;
 
@@ -167,6 +169,7 @@ double myAtan2(double y, double x);
 double mySin(double x);
 double myCos(double y);
 double mySqrt(double x);
+double sqr(double x);
 
 // Normalizes the angle to the range [-PI, PI]
 double normalizeAngle(double alpha);

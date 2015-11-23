@@ -16,6 +16,12 @@ struct Tile {
     Tile(int x, int y): x(x), y(y) { }
     Tile(const Tile& other): x(other.x), y(other.y) { }
 
+    Tile *operator=(const Tile& other) {
+        x = other.x;
+        y = other.y;
+        return this;
+    }
+
     bool operator==(const Tile& other) const {
         return x == other.x && y == other.y;
     }
