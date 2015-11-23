@@ -15,6 +15,8 @@ using namespace model;
 using namespace std;
 
 // #define DEBUG_PHYSICS_PREDICTION
+// #define REVERSE_MODE
+
 #ifndef ONLINE_JUDGE
 #define VISUALIZE
 #endif
@@ -337,6 +339,36 @@ vector<Tile> computePath(const Car& self, const World& world, const Game& game) 
     return result;
 }
 
+bool reverseMode(const CarPosition& me, const World& world, Go& result) {
+#ifndef REVERSE_MODE
+    return false;
+#else
+    static int lastZeroSpeedTick = -1;
+    static int reverseUntilTick = -1;
+
+    auto tick = world.getTick();
+
+    // TODO: check this method
+
+    if (reverseUntilTick != -1 && tick <= reverseUntilTick) {
+        result = Go(-1.0, 0.0);
+        return true;
+    }
+
+    if (abs(me.velocity.length()) > 1e-1) {
+        lastZeroSpeedTick = -1;
+        return false;
+    }
+
+    if (lastZeroSpeedTick == -1) lastZeroSpeedTick = tick;
+    if (tick - lastZeroSpeedTick < 20) return false;
+
+    reverseUntilTick = tick + 40;
+    result = Go(-1.0, 0.0);
+    return true;
+#endif
+}
+
 void printMove(const Move& move) {
     ostringstream ss;
     ss.precision(3);
@@ -366,6 +398,12 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 
     if (world.getTick() < game.getInitialFreezeDurationTicks()) {
         move.setEnginePower(1.0);
+        return;
+    }
+
+    Go reverse;
+    if (reverseMode(CarPosition(&self), world, reverse)) {
+        reverse.applyTo(move);
         return;
     }
 

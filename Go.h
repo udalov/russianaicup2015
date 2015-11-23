@@ -16,6 +16,8 @@ struct Go {
     bool useNitro;
     bool spillOil;
 
+    Go() : enginePower(), wheelTurn(), brake(), throwProjectile(), useNitro(), spillOil() { }
+
     Go(double enginePower,
        double wheelTurn,
        bool brake = false,
