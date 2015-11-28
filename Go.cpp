@@ -4,6 +4,15 @@
 
 using namespace std;
 
+bool Go::operator==(const Go& other) const {
+    return enginePower == other.enginePower &&
+            wheelTurn == other.wheelTurn &&
+            brake == other.brake &&
+            throwProjectile == other.throwProjectile &&
+            useNitro == other.useNitro &&
+            spillOil == other.spillOil;
+}
+
 void Go::applyTo(Move& move) const {
     move.setEnginePower(enginePower);
     move.setWheelTurn(wheelTurn);

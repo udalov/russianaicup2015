@@ -27,6 +27,8 @@ struct Go {
             : enginePower(enginePower), wheelTurn(wheelTurn), brake(brake), throwProjectile(throwProjectile),
               useNitro(useNitro), spillOil(spillOil) { }
 
+    bool operator==(const Go& other) const;
+
     void applyTo(Move& move) const;
 
     string toString() const;

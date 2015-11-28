@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 project(russianaicup)
 
-SET(CMAKE_CXX_FLAGS "-D__APPLE__ -std=c++11 -O2 -Wall -Wno-unknown-pragmas -fno-optimize-sibling-calls -fno-strict-aliasing")
+SET(CMAKE_CXX_FLAGS "-D__APPLE__ -std=c++11 -O2 -g -Wall -Wno-unknown-pragmas -fno-optimize-sibling-calls -fno-strict-aliasing")
 
 add_library(russianaicup
         csimplesocket/HTTPActiveSocket.cpp

@@ -154,6 +154,10 @@ struct Segment {
     bool intersects(const Point& q1, const Point& q2, Point& result) const;
     bool intersects(const Rect& rect, Point& result) const;
     bool intersects(const Segment& other, Point& result) const;
+
+    Segment operator+(const Vec& direction) const;
+
+    string toString() const;
 };
 
 struct Circle {

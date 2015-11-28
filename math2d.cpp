@@ -181,6 +181,10 @@ string Point::toString() const {
     return ss.str();
 }
 
+string Segment::toString() const {
+    return string("<") + p1.toString() + " -> " + p2.toString() + ">";
+}
+
 Vec Vec::rotate(double alpha) const {
     auto cos = myCos(alpha);
     auto sin = mySin(alpha);
@@ -214,6 +218,7 @@ Point Segment::center() const {
 }
 
 double Segment::distanceFrom(const Point& point) const {
+    // TODO: optimize
     auto line = Line(p1, p2);
     auto projection = line.project(point);
     if (withinAABB(p1, p2, projection)) return point.distanceTo(projection);
@@ -246,6 +251,10 @@ bool Segment::intersects(const Point& q1, const Point& q2, Point& result) const 
     auto l2 = Line(q1, q2);
     return l1.intersects(l2, result) && contains(result) &&
            segmentContainsPoint(q1.x, q1.y, q2.x, q2.y, result.x, result.y);
+}
+
+Segment Segment::operator+(const Vec& direction) const {
+    return Segment(p1 + direction, p2 + direction);
 }
 
 bool Line::intersects(const Line& other, Point& result) const {

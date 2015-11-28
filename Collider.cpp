@@ -9,6 +9,7 @@ bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionIn
     // TODO: optimize
     auto& points = rect.points;
     vector<Point> intersections;
+    intersections.reserve(2);
     for (unsigned long i = 0, size = points.size(); i < size; i++) {
         auto side = Segment(points[i], points[i + 1 == size ? 0 : i + 1]);
         Point intersection;

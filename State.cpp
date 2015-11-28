@@ -5,6 +5,7 @@
 #include "math3d.h"
 
 #include <algorithm>
+#include <memory>
 #include <sstream>
 #include <iostream>
 
@@ -128,8 +129,9 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
     // if (D) cout << "vec-bc " << vecBC.toString() << " relative-velocity " << relativeVelocity.toString() << endl;
     if (relativeVelocity * normal < EPSILON) {
         // TODO: optimize
-        resolveImpact(collision, car, normal, vecBC, relativeVelocity);
-        resolveSurfaceFriction(collision, car, normal, vecBC, relativeVelocity);
+        // TODO: turn on
+        // resolveImpact(collision, car, normal, vecBC, relativeVelocity);
+        // resolveSurfaceFriction(collision, car, normal, vecBC, relativeVelocity);
     }
     if (collision.depth > EPSILON) {
         car.location -= collision.normal * (collision.depth + EPSILON);
@@ -175,7 +177,13 @@ Walls computeWalls() {
                         (tx + max(dx[d] - dy[d], 0)) * tileSize - dx[d] * margin,
                         (ty + max(dx[d] + dy[d], 0)) * tileSize - dy[d] * margin
                 );
-                segments[tx][ty][d] = Segment(p1, p2);
+                auto segment = Segment(p1, p2);
+
+                // Reorder p1 and p2 so that if p1.x == p2.x then p1.y < p2.y, and if p1.y == p2.y then p1.x < p2.x
+                if (!(d & 1) && segment.p1.y > segment.p2.y) segment = Segment(segment.p2, segment.p1);
+                if ((d & 1) && segment.p1.x > segment.p2.x) segment = Segment(segment.p1, segment.p1);
+
+                segments[tx][ty][d] = segment;
 
                 auto p = Point(
                         (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
@@ -194,9 +202,12 @@ void collideCarWithWalls(CarPosition& car) {
     static Map& map = Map::getMap();
     static const double margin = game.getTrackTileMargin();
     static const double tileSize = game.getTrackTileSize();
-    static const double carRadius = myHypot(game.getCarHeight() / 2, game.getCarWidth() / 2);
+    static const double carRadius = myHypot(game.getCarHeight() / 2, game.getCarWidth() / 2) + EPSILON;
 
     static auto allWalls = computeWalls();
+
+    auto& location = car.location;
+    unique_ptr<Rect> rect = nullptr;
 
     auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
     auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
@@ -208,9 +219,20 @@ void collideCarWithWalls(CarPosition& car) {
             auto& wallSegments = allWalls.segments[tx][ty];
             for (int d = 0; d < 4; d++) {
                 if (tile & (1 << d)) continue;
+
                 auto& wall = wallSegments[d];
-                if (wall.distanceFrom(car.location) > carRadius + EPSILON) continue;
-                if (collideRectAndSegment(car.rectangle(), wall, collision)) {
+                if (!(d & 1)) {
+                    if (abs(location.x - wall.p1.x) > carRadius) continue;
+                    if (location.y < wall.p1.y - carRadius) continue;
+                    if (location.y > wall.p2.y + carRadius) continue;
+                } else {
+                    if (abs(location.y - wall.p1.y) > carRadius) continue;
+                    if (location.x < wall.p1.x - carRadius) continue;
+                    if (location.x > wall.p2.x + carRadius) continue;
+                }
+
+                if (rect == nullptr) rect = unique_ptr<Rect>(new Rect(car.rectangle()));
+                if (collideRectAndSegment(*rect, wall, collision)) {
                     /*
                     if (D) {
                         cout << "segment collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
@@ -226,10 +248,10 @@ void collideCarWithWalls(CarPosition& car) {
             for (int d = 0; d < 4; d++) {
                 if (!(tile & (1 << d)) || !(tile & (1 << ((d + 1) & 3)))) continue;
                 auto& corner = wallCorners[d];
-                if (car.location.distanceTo(corner.center) > margin + carRadius + EPSILON) continue;
-                auto rect = car.rectangle();
-                if (rect.distanceFrom(corner.center) > margin + EPSILON) continue;
-                if (collideCircleAndRect(rect, corner, collision)) {
+                if (location.distanceTo(corner.center) > margin + carRadius) continue;
+                if (rect == nullptr) rect = unique_ptr<Rect>(new Rect(car.rectangle()));
+                if (rect->distanceFrom(corner.center) > margin + EPSILON) continue;
+                if (collideCircleAndRect(*rect, corner, collision)) {
                     /*
                     if (D) {
                         cout << "corner collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
@@ -245,8 +267,7 @@ void collideCarWithWalls(CarPosition& car) {
 }
 
 void State::apply(const vector<Go>& moves) {
-    // TODO: simulate all cars
-    static const bool carsSize = 1;
+    auto carsSize = moves.size();
 
     static auto& game = Const::getGame();
     static const double carAngularSpeedFactor = game.getCarAngularSpeedFactor();
@@ -316,13 +337,16 @@ void CarPosition::advance(const Go& move) {
     static const double lengthwiseVelocityChangeBase = game.getCarLengthwiseMovementFrictionFactor();
     static const double crosswiseVelocityChange = game.getCarCrosswiseMovementFrictionFactor();
 
+    auto dir = direction();
+    auto side = Vec(-dir.y, dir.x);
+
     // Location
 
     location += velocity;
 
     if (!move.brake) {
         auto acceleration = enginePower * (enginePower < 0 ? buggyEngineRearAcceleration : buggyEngineForwardAcceleration);
-        velocity += direction() * acceleration;
+        velocity += dir * acceleration;
     }
 
     // Air friction
@@ -332,21 +356,19 @@ void CarPosition::advance(const Go& move) {
     // Movement friction
 
     auto lengthwiseVelocityChange = move.brake ? crosswiseVelocityChange : lengthwiseVelocityChangeBase;
-    auto lengthwiseUnitVector = direction();
-    auto lengthwiseVelocityPart = velocity * lengthwiseUnitVector;
+    auto lengthwiseVelocityPart = velocity * dir;
     lengthwiseVelocityPart =
             lengthwiseVelocityPart >= 0.0
             ? max(lengthwiseVelocityPart - lengthwiseVelocityChange, 0.0)
             : min(lengthwiseVelocityPart + lengthwiseVelocityChange, 0.0);
 
-    auto crosswiseUnitVector = Vec(-lengthwiseUnitVector.y, lengthwiseUnitVector.x);
-    auto crosswiseVelocityPart = velocity * crosswiseUnitVector;
+    auto crosswiseVelocityPart = velocity * side;
     crosswiseVelocityPart =
             crosswiseVelocityPart >= 0.0
             ? max(crosswiseVelocityPart - crosswiseVelocityChange, 0.0)
             : min(crosswiseVelocityPart + crosswiseVelocityChange, 0.0);
 
-    velocity = lengthwiseUnitVector * lengthwiseVelocityPart + crosswiseUnitVector * crosswiseVelocityPart;
+    velocity = dir * lengthwiseVelocityPart + side * crosswiseVelocityPart;
 
     // Angle
 
@@ -354,12 +376,14 @@ void CarPosition::advance(const Go& move) {
 }
 
 void State::apply(const Go& move) {
-    apply(vector<Go>(original->getCars().size(), move));
+    // TODO: simulate all cars
+    apply(vector<Go>(1, move));
 }
 
 Rect CarPosition::rectangle() const {
-    Vec forward = direction() * (original->getWidth() / 2);
-    Vec sideways = direction().rotate(M_PI / 2) * (original->getHeight() / 2);
+    Vec dir = direction();
+    Vec forward = dir * (original->getWidth() / 2);
+    Vec sideways = Vec(-dir.y, dir.x) * (original->getHeight() / 2);
     return Rect({
         location + forward - sideways,
         location + forward + sideways,
