@@ -6,6 +6,7 @@
 #include "model/Projectile.h"
 #include "model/World.h"
 #include "Go.h"
+#include "Path.h"
 
 #include <vector>
 
@@ -41,6 +42,9 @@ struct CarPosition {
     Vec direction() const { return Vec(angle); }
 
     void advance(const Go& move);
+
+    Point bumperCenter() const;
+    Tile tile() const;
 
     string toString() const;
 };

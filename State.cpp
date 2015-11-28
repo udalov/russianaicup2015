@@ -391,6 +391,19 @@ CarPosition::CarPosition(const Car *car) : original(car),
         nitroCooldown(car->getRemainingNitroCooldownTicks()),
         rectangle(rectangleByCar(car->getAngle(), car->getX(), car->getY())) { }
 
+Point CarPosition::bumperCenter() const {
+    static const double carWidth = Const::getGame().getCarWidth();
+
+    return location + direction() * (carWidth / 2);
+}
+
+Tile CarPosition::tile() const {
+    static const double tileSize = Const::getGame().getTrackTileSize();
+
+    Point bc = bumperCenter();
+    return Tile(static_cast<int>(bc.x / tileSize), static_cast<int>(bc.y / tileSize));
+};
+
 string CarPosition::toString() const {
     ostringstream ss;
     ss.precision(8);

@@ -3,7 +3,9 @@
 #include "Const.h"
 #include "Map.h"
 #include "Path.h"
+#include "Scorer.h"
 #include "State.h"
+#include "Tracks.h"
 #include "VisClient.h"
 
 #include <algorithm>
@@ -184,290 +186,63 @@ void drawMap() {
 
 // ----
 
-Point bumperCenter(const CarPosition& car) {
-    static const double carWidth = Const::getGame().getCarWidth();
+// TODO: only use them if they are from the previous tick
+vector<Track> previousTracks;
 
-    return car.location + car.direction() * (carWidth / 2);
-}
-
-Tile findCurrentTile(const CarPosition& car) {
-    static const double tileSize = Const::getGame().getTrackTileSize();
-
-    Point bc = bumperCenter(car);
-    return Tile(static_cast<int>(bc.x / tileSize), static_cast<int>(bc.y / tileSize));
-};
-
-vector<Go> collectMoves(
-        double engineFrom, double engineTo, double engineStep,
-        double wheelFrom, double wheelTo, double wheelStep,
-        bool brake
-) {
-    vector<Go> result;
-    for (double e = engineFrom; e <= engineTo; e += engineStep) {
-        for (double w = wheelFrom; w <= wheelTo; w += wheelStep) {
-            for (int b = 0; b <= brake; b++) {
-                result.emplace_back(e, w, (bool) b);
-            }
-        }
-    }
-    return result;
-}
-
-Segment segmentBetweenTiles(const Tile& tile1, const Tile& tile2) {
-    static const double angle = M_PI / 6;
-    static const double coeff = 0.5 / myCos(angle);
-    auto p1 = tile1.toPoint();
-    auto p2 = tile2.toPoint();
-    auto v = Vec(p1, p2) * coeff;
-    return Segment(p1 + v.rotate(angle), p1 + v.rotate(-angle));
-}
-
-bool isFacingTowards(const CarPosition& car, const Segment& segment) {
-    auto& p = car.location;
-    return (Vec(p, segment.p1) ^ car.velocity) < 0 && (car.velocity ^ Vec(p, segment.p2)) < 0;
-}
-
-double score(const State& startState, const State& state, const vector<Tile>& path, const vector<Segment>& pathSegment, bool debug = false) {
-    auto& me = state.me();
-
-    auto location = bumperCenter(me);
-
-    unsigned long pathIndex = find(path.begin(), path.end(), findCurrentTile(startState.me())) - path.begin() + 1;
-    if (findCurrentTile(me) == path[pathIndex] && pathIndex + 1 < path.size()) pathIndex++;
-
-    /*
-    if (state.original->getTick() >= 700) {
-        cout << state.original->getTick();
-        for (auto& tile : path) cout << " " << tile.toString();
-        cout << endl << "  start " << findCurrentTile(startState.me()).toString() << " cur " << findCurrentTile(me).toString() << " " << pathIndex << endl;
-    }
-    */
-
-    auto& next = pathSegment[pathIndex - 1];
-    auto cur =
-            pathIndex >= 2 ? pathSegment[pathIndex - 2] :
-            next + Vec(next.center(), path.front().toPoint()) * 2.0;
-    auto& nextNext = pathSegment[pathIndex];
-    auto& nextNextNext = pathSegment[pathIndex + 1];
-
-    auto curHealthDelta = min(me.health - startState.me().health + 0.03, 0.0);
-
-    double result = curHealthDelta * 1e9;
-
-    auto centerLine = Vec(cur.center(), next.center());
-    {
-        double travelled = pathIndex + Vec(cur.center(), location).projection(centerLine) / centerLine.length();
-        result += travelled;
-    }
-
-    /*
-    {
-        auto point = next.center();
-        auto nextNextCenter = nextNext.center();
-        auto d1 = next.p1.distanceTo(nextNextCenter);
-        auto d2 = next.p2.distanceTo(nextNextCenter);
-        if (abs(d1 - d2) > 1e-2) {
-            auto curCenter = cur.center();
-            if (abs(next.p1.distanceTo(curCenter) - next.p2.distanceTo(curCenter)) > 1e-2) {
-                point = d1 < d2 ? next.p1 : next.p2;
-            } else {
-                point = d1 > d2 ? next.p1 : next.p2;
-            }
-        }
-
-        result += pathIndex * 5e6 - point.distanceTo(me.location) * 1e3;
-    }
-    */
-
-    auto dir = me.direction();
-    /*
-    if (!isFacingTowards(me, next)) {
-        auto minAngle = min(
-                abs(dir.angleTo(Vec(location, next.p1))),
-                abs(dir.angleTo(Vec(location, next.p2)))
-        );
-        result -= minAngle * 500.0;
-    }
-    */
-
-    /*
-    auto nextTurnAngle = abs(dir.angleTo(Vec(next.center(), nextNextNext.center())));
-    result -= nextTurnAngle * 1400.0;
-    */
-
-    result += (me.velocity.projection(centerLine) / centerLine.length()) * 0.1;
-
-    /*
-    Point center;
-    bool turn = false;
-    if (cur.p1.y == cur.p2.y && next.p1.x == next.p2.x) {
-        turn = true;
-        center = Point(next.p1.x, cur.p1.y);
-    } else if (cur.p1.x == cur.p2.x && next.p1.y == next.p2.y) {
-        turn = true;
-        center = Point(cur.p1.x, next.p1.y);
-    }
-
-    double turnAngle;
-    if (turn) {
-        auto angle = Vec(center, next.center()).angleTo(Vec(center, cur.center()));
-        if (debug) cout << "  angle " << angle;
-        auto v = Vec(center, location).rotate(angle);
-        turnAngle = abs(dir.angleTo(v));
-    } else {
-        turnAngle = abs(dir.angleTo(Vec(cur.center(), next.center())));
-    }
-
-    if (debug) cout << "  turn-angle " << turnAngle << endl;
-
-    result -= turnAngle * 0.1;
-    */
-
-    /*
-    unsigned long j = pathIndex - 1;
-    while (j + 1 < pathSegment.size() &&
-           abs(pathSegment[j].p1.distanceTo(pathSegment[j + 1].center()) - pathSegment[j].p2.distanceTo(pathSegment[j + 1].center())) < 1e-2) {
-        j++;
-    }
-    Point far = pathSegment[j].p1.distanceTo(pathSegment[j + 1].center()) > pathSegment[j].p2.distanceTo(pathSegment[j + 1].center())
-        ? pathSegment[j].p1 : pathSegment[j].p2;
-    Point g = cur.p1.distanceTo(far) < cur.p2.distanceTo(far) ? cur.p1 : cur.p2;
-    auto dist = Line(far, g).distanceFrom(me.location);
-
-    result -= dist * 0.5;
-    */
-
-    /*
-    double angleDiff = Vec(cur.center(), next.center()).angleTo(me.direction());
-    result -= abs(angleDiff) * 1000.0;
-    */
-
-    return result;
-}
-
-Go experimentalBruteForce(const World& world, const vector<Tile>& path) {
-    Go best(-1.0, 0.0);
-    Go bestSecondMove(best);
-    Go bestThirdMove(best);
-    double bestScore = -1e100;
+Go solve(const World& world, const vector<Tile>& path) {
     auto startState = State(&world);
 
-    const int firstDuration = 10;
-    const int secondDuration = 40;
-    const int thirdDuration = 80;
+    // TODO: constant
+    auto tracks = vector<Track>(previousTracks.begin(), previousTracks.begin() + min(previousTracks.size(), 30UL));
+    collectTracks(startState.me(), tracks);
+    auto scorer = Scorer(startState, path, vis);
 
-    auto firstMoves = collectMoves(1.0, 1.0, 1.0, -1.0, 1.0, 0.125, true);
-    for (auto brake : { false, true }) {
-        firstMoves.emplace_back(startState.me().enginePower, startState.me().wheelTurn, brake);
-    }
-    auto secondMovesBase = collectMoves(1.0, 1.0, 1.0, -1.0, 1.0, 1.0, true);
-    auto thirdMovesBase = collectMoves(1.0, 1.0, 1.0, 0.0, 0.0, 1.0, true);
+    for (auto& track : tracks) {
+        double score = 0.0;
 
-    // TODO: more careful filtering
-    for (int moveNumber = 1; moveNumber <= 2; moveNumber++) {
-        auto& v = moveNumber == 1 ? firstMoves : secondMovesBase;
-        for (unsigned long i = 0; i < v.size(); i++) {
-            auto& go = v[i];
-            bool remove = false;
-            if (go.enginePower < 0.0 && go.wheelTurn != -1.0 && go.wheelTurn != 0.0 && go.wheelTurn != 1.0) {
-                remove = true;
-            }
-            if (moveNumber == 1) {
-                if (go.enginePower != -1.0 && go.enginePower != 1.0 &&
-                    abs(startState.me().enginePower - go.enginePower) > firstDuration * Const::getGame().getCarEnginePowerChangePerTick()) {
-                    remove = true;
-                }
-                if (go.wheelTurn != -1.0 && go.wheelTurn != 1.0 &&
-                    abs(startState.me().wheelTurn - go.wheelTurn) > firstDuration * Const::getGame().getCarWheelTurnChangePerTick()) {
-                    remove = true;
-                }
-            }
-            if (remove) {
-                v.erase(v.begin() + i);
-                i--;
+        auto state = State(startState);
+        for (unsigned long i = 0, size = track.moves.size(); i < size; i++) {
+            state.apply(track.moves[i]);
+
+            const int firstScoreTurn = 40;
+            const int stepScoreTurn = 5;
+            if (i >= firstScoreTurn && !(i % stepScoreTurn)) {
+                double s = scorer.score(state);
+                score += s / sqrt(((i - firstScoreTurn + stepScoreTurn) / stepScoreTurn));
             }
         }
-    }
-    
-    // if (world.getTick() >= 700) cout << "moves " << firstMoves.size() << " " << secondMovesBase.size() << " " << thirdMovesBase.size() << endl;
 
-    vector<Segment> pathSegment;
-    for (unsigned long i = 0, size = path.size(); i < size - 1; i++) {
-        pathSegment.push_back(segmentBetweenTiles(path[i], path[i + 1]));
+        track.setScore(score);
     }
 
-    vis->drawLine(pathSegment.front().p1, pathSegment.front().p2);
+    sort(tracks.rbegin(), tracks.rend());
 
-    for (auto& firstMove : firstMoves) {
-        auto afterFirst = State(startState);
-        for (int i = 0; i < firstDuration; i++) {
-            afterFirst.apply(firstMove);
-        }
-
-        double firstScore = score(startState, afterFirst, path, pathSegment);
-
-        auto secondMoves = secondMovesBase;
-        if (find(secondMoves.begin(), secondMoves.end(), firstMove) == secondMoves.end()) {
-            secondMoves.push_back(firstMove);
-        }
-
-        for (auto& secondMove : secondMoves) {
-            auto afterSecond = State(afterFirst);
-            for (int j = 0; j < secondDuration; j++) {
-                afterSecond.apply(secondMove);
-            }
-
-            double secondScore = score(startState, afterSecond, path, pathSegment);
-
-            auto thirdMoves = thirdMovesBase;
-            if (find(thirdMoves.begin(), thirdMoves.end(), firstMove) == thirdMoves.end()) {
-                thirdMoves.push_back(firstMove);
-            }
-            if (find(thirdMoves.begin(), thirdMoves.end(), secondMove) == thirdMoves.end()) {
-                thirdMoves.push_back(secondMove);
-            }
-
-            for (auto& thirdMove : thirdMoves) {
-                auto afterThird = State(afterSecond);
-                for (int k = 0; k < thirdDuration; k++) {
-                    afterThird.apply(thirdMove);
-                }
-
-                double curScore = score(startState, afterThird, path, pathSegment) + secondScore * 4.0;
-                if (curScore > bestScore) {
-                    bestScore = curScore;
-                    best = firstMove;
-                    bestSecondMove = secondMove;
-                    bestThirdMove = thirdMove;
-                }
-            }
-        }
-    }
+    auto& bestTrack = tracks.front();
+    auto bestMove = bestTrack.moves.front();
 
     {
         auto state = State(startState);
-        for (int i = 0; i < firstDuration; i++) {
-            state.apply(best);
-        }
-        for (int i = 0; i < secondDuration; i++) {
-            state.apply(bestSecondMove);
-        }
-        for (int i = 0; i < thirdDuration; i++) {
-            state.apply(bestThirdMove);
+        for (auto& go : bestTrack.moves) {
+            state.apply(go);
         }
         vis->drawRect(state.me().rectangle);
-        cout << "tick " << world.getTick() << " best-score " << bestScore <<
-            " #1 " << best.toString() << " #2 " << bestSecondMove.toString() << " #3 " << bestThirdMove.toString() << endl;
-        score(startState, state, path, pathSegment, true);
+        cout << "tick " << world.getTick() << " tracks " << tracks.size() <<
+                " best-score " << bestTrack.score << " best-move " << bestMove.toString() << endl;
+        scorer.score(state, true);
     }
 
-    return best;
+    previousTracks.resize(tracks.size());
+    transform(tracks.begin(), tracks.end(), previousTracks.begin(), [](const Track& track) {
+        return track.drop(1);
+    });
+
+    return bestMove;
 }
 
 vector<Tile> computePath(const Car& self, const World& world, const Game& game) {
     auto& waypoints = world.getWaypoints();
     int i = self.getNextWaypointIndex();
-    Tile start = findCurrentTile(CarPosition(&self));
+    Tile start = CarPosition(&self).tile();
     vector<Tile> result;
     result.push_back(start);
     for (int steps = 0; steps < 5; steps++) {
@@ -503,8 +278,8 @@ bool reverseMode(const CarPosition& me, const World& world, Go& result) {
     }
 
     if (tick > waitUntilTick && tick - lastNonZeroSpeedTick >= 20) {
-        reverseUntilTick = tick + 50;
-        waitUntilTick = tick + 100;
+        reverseUntilTick = tick + 120;
+        waitUntilTick = tick + 180;
     }
 
     return false;
@@ -553,8 +328,8 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 
     auto path = computePath(self, world, game);
 
-    Go best = experimentalBruteForce(world, path);
-    best.applyTo(move);
+    Go solution = solve(world, path);
+    solution.applyTo(move);
 
 #ifdef VISUALIZE
     printMove(move);
