@@ -154,13 +154,12 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
     auto state = State(currentState);
     for (int i = 0; i < lookahead; i++) {
         auto go = goDebugPhysicsPrediction(world.getTick() + i);
-        vector<Go> moves(world.getCars().size(), go);
-        state.apply(moves);
+        state.apply(go);
     }
 
     expectedPosByTick.insert({ world.getTick() + lookahead, state.me() });
 
-    vis->drawRect(state.me().rectangle());
+    vis->drawRect(state.me().rectangle);
 }
 
 // ----
@@ -456,7 +455,7 @@ Go experimentalBruteForce(const World& world, const vector<Tile>& path) {
         for (int i = 0; i < thirdDuration; i++) {
             state.apply(bestThirdMove);
         }
-        vis->drawRect(state.me().rectangle());
+        vis->drawRect(state.me().rectangle);
         cout << "tick " << world.getTick() << " best-score " << bestScore <<
             " #1 " << best.toString() << " #2 " << bestSecondMove.toString() << " #3 " << bestThirdMove.toString() << endl;
         score(startState, state, path, pathSegment, true);

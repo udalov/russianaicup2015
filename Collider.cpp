@@ -6,18 +6,19 @@
 using namespace std;
 
 bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionInfo& result) {
-    // TODO: optimize
     auto& points = rect.points;
-    vector<Point> intersections;
-    intersections.reserve(2);
+    auto intersections = 0;
+    Point intersectionSum;
     for (unsigned long i = 0, size = points.size(); i < size; i++) {
         auto side = Segment(points[i], points[i + 1 == size ? 0 : i + 1]);
         Point intersection;
         if (side.intersects(segment, intersection)) {
-            intersections.push_back(intersection);
+            intersections++;
+            intersectionSum.x += intersection.x;
+            intersectionSum.y += intersection.y;
         }
     }
-    if (intersections.size() != 2) return false;
+    if (intersections != 2) return false;
 
     auto line = Line(segment.p1, segment.p2);
 
@@ -41,10 +42,7 @@ bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionIn
 
     if ((minDist < 0.0 && maxDist < 0.0) || (minDist > 0.0 && maxDist > 0.0)) return false;
 
-    result.point = Point(
-            (intersections[0].x + intersections[1].x) / 2,
-            (intersections[0].y + intersections[1].y) / 2
-    );
+    result.point = Point(intersectionSum.x / 2, intersectionSum.y / 2);
 
     if (line.signedDistanceFrom(rect.center()) > 0.0) {
         result.normal = line.parallelLine(*minDistPoint).unitNormalFrom(*maxDistPoint);

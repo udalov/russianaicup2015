@@ -121,6 +121,8 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
     // if (D) cout << "  velocity " << car.velocity.length() << endl;
     car.health = max(car.health - car.velocity.length() / 200.0, 0.0); // ?!
 
+    // TODO: turn on
+    /*
     auto normal = toVec3D(collision.normal);
     auto vecBC = toVec3D(car.location, collision.point);
     auto angularSpeedBC = Vec3D(0.0, 0.0, car.angularSpeed) ^ vecBC;
@@ -129,10 +131,11 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
     // if (D) cout << "vec-bc " << vecBC.toString() << " relative-velocity " << relativeVelocity.toString() << endl;
     if (relativeVelocity * normal < EPSILON) {
         // TODO: optimize
-        // TODO: turn on
         // resolveImpact(collision, car, normal, vecBC, relativeVelocity);
         // resolveSurfaceFriction(collision, car, normal, vecBC, relativeVelocity);
     }
+    */
+
     if (collision.depth > EPSILON) {
         car.location -= collision.normal * (collision.depth + EPSILON);
     }
@@ -207,8 +210,6 @@ void collideCarWithWalls(CarPosition& car) {
     static auto allWalls = computeWalls();
 
     auto& location = car.location;
-    unique_ptr<Rect> rect = nullptr;
-
     auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
     auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
     CollisionInfo collision;
@@ -231,8 +232,7 @@ void collideCarWithWalls(CarPosition& car) {
                     if (location.x > wall.p2.x + carRadius) continue;
                 }
 
-                if (rect == nullptr) rect = unique_ptr<Rect>(new Rect(car.rectangle()));
-                if (collideRectAndSegment(*rect, wall, collision)) {
+                if (collideRectAndSegment(car.rectangle, wall, collision)) {
                     /*
                     if (D) {
                         cout << "segment collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
@@ -249,9 +249,8 @@ void collideCarWithWalls(CarPosition& car) {
                 if (!(tile & (1 << d)) || !(tile & (1 << ((d + 1) & 3)))) continue;
                 auto& corner = wallCorners[d];
                 if (location.distanceTo(corner.center) > margin + carRadius) continue;
-                if (rect == nullptr) rect = unique_ptr<Rect>(new Rect(car.rectangle()));
-                if (rect->distanceFrom(corner.center) > margin + EPSILON) continue;
-                if (collideCircleAndRect(*rect, corner, collision)) {
+                if (car.rectangle.distanceFrom(corner.center) > margin + EPSILON) continue;
+                if (collideCircleAndRect(car.rectangle, corner, collision)) {
                     /*
                     if (D) {
                         cout << "corner collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
@@ -266,41 +265,10 @@ void collideCarWithWalls(CarPosition& car) {
     }
 }
 
-void State::apply(const vector<Go>& moves) {
-    auto carsSize = moves.size();
-
-    static auto& game = Const::getGame();
-    static const double carAngularSpeedFactor = game.getCarAngularSpeedFactor();
-    static const int nitroDurationTicks = game.getNitroDurationTicks();
-    static const double nitroEnginePowerFactor = game.getNitroEnginePowerFactor();
-
-    for (unsigned long i = 0; i < carsSize; i++) {
-        auto& car = cars[i];
-        auto& move = moves[i];
-
-        if (move.useNitro && car.nitroCharges > 0 && car.nitroCooldown == 0) {
-            car.nitroCharges--;
-            car.nitroCooldown = nitroDurationTicks;
-        }
-
-        if (car.nitroCooldown > 0) {
-            car.nitroCooldown--;
-            car.enginePower = nitroEnginePowerFactor;
-        } else {
-            car.enginePower = updateEnginePower(car.enginePower == nitroEnginePowerFactor ? 1.0 : car.enginePower, move.enginePower);
-        }
-
-        car.wheelTurn = updateWheelTurn(car.wheelTurn, move.wheelTurn);
-        car.angularSpeed = car.wheelTurn * carAngularSpeedFactor * (car.velocity * car.direction());
-    }
-
-    for (unsigned long i = 0; i < carsSize; i++) {
-        cars[i].advance(moves[i]);
-    }
-
-    for (unsigned long i = 0; i < carsSize; i++) {
-        collideCarWithWalls(cars[i]);
-    }
+void State::apply(const Go& move) {
+    // TODO: simulate all cars
+    cars.front().advance(move);
+    collideCarWithWalls(cars.front());
 
     for (auto& oilSlick : oilSlicks) {
         oilSlick.apply();
@@ -328,8 +296,25 @@ void WasherPosition::apply() {
     // TODO
 }
 
+Rect rectangleByCar(double angle, double x, double y) {
+    static const double carWidth = Const::getGame().getCarWidth();
+    static const double carHeight = Const::getGame().getCarHeight();
+
+    Vec dir = Vec(angle);
+    Vec forward = dir * (carWidth / 2);
+    Vec sideways = Vec(-dir.y, dir.x) * (carHeight / 2);
+    Point lpf = Point(x + forward.x, y + forward.y);
+    Point lmf = Point(x - forward.x, y - forward.y);
+    return Rect({ lpf - sideways, lpf + sideways, lmf + sideways, lmf - sideways });
+}
+
 void CarPosition::advance(const Go& move) {
     static auto& game = Const::getGame();
+
+    static const double carAngularSpeedFactor = game.getCarAngularSpeedFactor();
+    static const int nitroDurationTicks = game.getNitroDurationTicks();
+    static const double nitroEnginePowerFactor = game.getNitroEnginePowerFactor();
+
     static const double buggyEngineRearAcceleration = game.getBuggyEngineRearPower() / game.getBuggyMass();
     static const double buggyEngineForwardAcceleration = game.getBuggyEngineForwardPower() / game.getBuggyMass();
 
@@ -339,6 +324,23 @@ void CarPosition::advance(const Go& move) {
 
     auto dir = direction();
     auto side = Vec(-dir.y, dir.x);
+
+    // Engine & wheels
+
+    if (move.useNitro && nitroCharges > 0 && nitroCooldown == 0) {
+        nitroCharges--;
+        nitroCooldown = nitroDurationTicks;
+    }
+
+    if (nitroCooldown > 0) {
+        nitroCooldown--;
+        enginePower = nitroEnginePowerFactor;
+    } else {
+        enginePower = updateEnginePower(enginePower == nitroEnginePowerFactor ? 1.0 : enginePower, move.enginePower);
+    }
+
+    wheelTurn = updateWheelTurn(wheelTurn, move.wheelTurn);
+    angularSpeed = wheelTurn * carAngularSpeedFactor * (velocity * dir);
 
     // Location
 
@@ -373,24 +375,21 @@ void CarPosition::advance(const Go& move) {
     // Angle
 
     angle += angularSpeed;
+
+    rectangle = rectangleByCar(angle, location.x, location.y);
 }
 
-void State::apply(const Go& move) {
-    // TODO: simulate all cars
-    apply(vector<Go>(1, move));
-}
-
-Rect CarPosition::rectangle() const {
-    Vec dir = direction();
-    Vec forward = dir * (original->getWidth() / 2);
-    Vec sideways = Vec(-dir.y, dir.x) * (original->getHeight() / 2);
-    return Rect({
-        location + forward - sideways,
-        location + forward + sideways,
-        location - forward + sideways,
-        location - forward - sideways
-    });
-}
+CarPosition::CarPosition(const Car *car) : original(car),
+        location(Point(car->getX(), car->getY())),
+        velocity(Vec(car->getSpeedX(), car->getSpeedY())),
+        angle(car->getAngle()),
+        angularSpeed(car->getAngularSpeed()),
+        enginePower(car->getEnginePower()),
+        wheelTurn(car->getWheelTurn()),
+        health(car->getDurability()),
+        nitroCharges(car->getNitroChargeCount()),
+        nitroCooldown(car->getRemainingNitroCooldownTicks()),
+        rectangle(rectangleByCar(car->getAngle(), car->getX(), car->getY())) { }
 
 string CarPosition::toString() const {
     ostringstream ss;
