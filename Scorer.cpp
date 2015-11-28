@@ -1,6 +1,7 @@
 #include "Scorer.h"
 #include "math2d.h"
 
+#include <algorithm>
 #include <cmath>
 
 using namespace std;

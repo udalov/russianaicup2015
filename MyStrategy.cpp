@@ -193,7 +193,9 @@ Go solve(const World& world, const vector<Tile>& path) {
     auto startState = State(&world);
 
     // TODO: constant
-    auto tracks = vector<Track>(previousTracks.begin(), previousTracks.begin() + min(previousTracks.size(), 30UL));
+    auto tracks = vector<Track>(previousTracks.begin(), previousTracks.begin() + min(previousTracks.size(),
+            static_cast<vector<Track>::size_type>(30)
+    ));
     collectTracks(startState.me(), tracks);
     auto scorer = Scorer(startState, path, vis);
 
