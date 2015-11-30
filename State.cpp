@@ -153,7 +153,7 @@ struct Walls {
 Walls computeWalls() {
     static Game& game = Const::getGame();
     static Map& map = Map::getMap();
-    static const double margin = game.getTrackTileMargin();
+    static const double margin = game.getTrackTileMargin() * 1.01; // To avoid driving right against the wall
     static const double tileSize = game.getTrackTileSize();
 
     auto segments = vector<vector<vector<Segment>>>(map.width, {
