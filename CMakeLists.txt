@@ -35,6 +35,7 @@ add_library(russianaicup
         Path.cpp
         Scorer.cpp
         Tracks.cpp
+        Debug.cpp
         )
 
 add_subdirectory(test)

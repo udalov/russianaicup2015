@@ -24,7 +24,7 @@ void Go::applyTo(Move& move) const {
 
 string Go::toString() const {
     ostringstream ss;
-    ss.precision(8);
+    ss.precision(3);
     ss << fixed << "(engine " << enginePower << " wheels " << wheelTurn;
     if (brake) ss << " BRAKE";
     if (throwProjectile) ss << " FIRE";

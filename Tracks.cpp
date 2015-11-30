@@ -2,6 +2,7 @@
 #include "Const.h"
 
 #include <algorithm>
+#include <random>
 
 using namespace std;
 
@@ -38,9 +39,17 @@ template <typename T> vector<T> addIfNeeded(const vector<T>& v, const T& element
     return v;
 }
 
+default_random_engine createRandomEngine() {
+    default_random_engine rng;
+    rng.seed(42);
+    return rng;
+}
+
 void collectTracks(const CarPosition& me, vector<Track>& result) {
     static const double carEnginePowerChangePerTick = Const::getGame().getCarEnginePowerChangePerTick();
     static const double carWheelTurnChangePerTick = Const::getGame().getCarWheelTurnChangePerTick();
+
+    static auto rng = createRandomEngine();
 
     const int firstDuration = 10;
     const int secondDuration = 25;
@@ -100,16 +109,18 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
 
     // TODO: experimental stuff
 
+    uniform_int_distribution<int> randTrack(0, result.size() - 1);
+    uniform_int_distribution<int> randBool(0, 1);
     for (int i = 0; i < 200; i++) {
-        int x = rand() % result.size();
+        int x = randTrack(rng);
         int y;
-        do { y = rand() % result.size(); } while (y == x);
+        do { y = randTrack(rng); } while (y == x);
 
         auto& t1 = result[x];
         auto& t2 = result[y];
         vector<Go> moves;
         for (unsigned long j = 0; j < t1.moves.size(); j += 10) {
-            auto& t = (rand() & 1) ? t1 : t2;
+            auto& t = (randBool(rng) & 1) ? t1 : t2;
             for (int k = 0; k < 10 && j + k < t.moves.size(); k++) {
                 moves.push_back(t.moves[j + k]);
             }

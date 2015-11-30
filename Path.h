@@ -26,6 +26,7 @@ struct Tile {
         return x == other.x && y == other.y;
     }
 
+    unsigned int manhattanDistanceTo(const Tile& other) const;
     bool isNeighborTo(const Tile& other) const;
 
     Point toPoint() const;

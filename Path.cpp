@@ -10,8 +10,12 @@
 
 using namespace std;
 
+unsigned int Tile::manhattanDistanceTo(const Tile& other) const {
+    return abs(x - other.x) + abs(y - other.y);
+}
+
 bool Tile::isNeighborTo(const Tile& other) const {
-    return abs(x - other.x) + abs(y - other.y) < 1;
+    return manhattanDistanceTo(other) == 1;
 }
 
 Point Tile::toPoint() const {
@@ -30,7 +34,7 @@ vector<Tile> bestPath(const Tile& start, const Tile& finish) {
     static const int dy[] = {0, 1, 0, -1};
     auto& map = Map::getMap();
 
-    if (start == finish) return { start, finish };
+    if (start == finish) return { finish };
     
     int startEnc = (start.x << 8) + start.y;
     int finishEnc = (finish.x << 8) + finish.y;
@@ -45,6 +49,7 @@ vector<Tile> bestPath(const Tile& start, const Tile& finish) {
         int xx = v >> 8, yy = v & 255;
         if (v == finishEnc) {
             vector<Tile> result;
+            result.reserve(start.manhattanDistanceTo(finish) + 1);
             while (prev.find(v) != prev.end()) {
                 result.emplace_back(v >> 8, v & 255);
                 if (prev[v] == startEnc) break;

@@ -1,6 +1,7 @@
 #include "math2d.h"
 #include "MyStrategy.h"
 #include "Const.h"
+#include "Debug.h"
 #include "Map.h"
 #include "Path.h"
 #include "Scorer.h"
@@ -210,7 +211,7 @@ Go solve(const World& world, const vector<Tile>& path) {
             const int stepScoreTurn = 5;
             if (i >= firstScoreTurn && !(i % stepScoreTurn)) {
                 double s = scorer.score(state);
-                score += s / sqrt(((i - firstScoreTurn + stepScoreTurn) / stepScoreTurn));
+                score += s / ((i - firstScoreTurn + stepScoreTurn) / stepScoreTurn);
             }
         }
 
@@ -228,9 +229,7 @@ Go solve(const World& world, const vector<Tile>& path) {
             state.apply(go);
         }
         vis->drawRect(state.me().rectangle);
-        cout << "tick " << world.getTick() << " tracks " << tracks.size() <<
-                " best-score " << bestTrack.score << " best-move " << bestMove.toString() << endl;
-        scorer.score(state, true);
+        cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score << " best-move " << bestMove.toString() << endl;
     }
 
     previousTracks.resize(tracks.size());

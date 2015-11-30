@@ -1,4 +1,5 @@
 #include "Collider.h"
+#include "Debug.h"
 
 #include <algorithm>
 #include <iostream>
@@ -18,7 +19,10 @@ bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionIn
             intersectionSum.y += intersection.y;
         }
     }
-    if (intersections != 2) return false;
+    if (!intersections) return false;
+    
+    // TODO: the following code is only tested for intersections = 2
+    // if (intersections != 2) return false;
 
     auto line = Line(segment.p1, segment.p2);
 
@@ -42,7 +46,7 @@ bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionIn
 
     if ((minDist < 0.0 && maxDist < 0.0) || (minDist > 0.0 && maxDist > 0.0)) return false;
 
-    result.point = Point(intersectionSum.x / 2, intersectionSum.y / 2);
+    result.point = Point(intersectionSum.x / intersections, intersectionSum.y / intersections);
 
     if (line.signedDistanceFrom(rect.center()) > 0.0) {
         result.normal = line.parallelLine(*minDistPoint).unitNormalFrom(*maxDistPoint);

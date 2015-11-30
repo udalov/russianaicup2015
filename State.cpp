@@ -1,6 +1,7 @@
 #include "State.h"
 #include "Collider.h"
 #include "Const.h"
+#include "Debug.h"
 #include "Map.h"
 #include "math3d.h"
 
@@ -184,7 +185,7 @@ Walls computeWalls() {
 
                 // Reorder p1 and p2 so that if p1.x == p2.x then p1.y < p2.y, and if p1.y == p2.y then p1.x < p2.x
                 if (!(d & 1) && segment.p1.y > segment.p2.y) segment = Segment(segment.p2, segment.p1);
-                if ((d & 1) && segment.p1.x > segment.p2.x) segment = Segment(segment.p1, segment.p1);
+                if ((d & 1) && segment.p1.x > segment.p2.x) segment = Segment(segment.p2, segment.p1);
 
                 segments[tx][ty][d] = segment;
 
@@ -210,11 +211,11 @@ void collideCarWithWalls(CarPosition& car) {
     static auto allWalls = computeWalls();
 
     auto& location = car.location;
-    auto tileX = static_cast<unsigned long>(car.location.x / tileSize - 0.5);
-    auto tileY = static_cast<unsigned long>(car.location.y / tileSize - 0.5);
+    auto tileX = static_cast<unsigned long>(max(location.x / tileSize - 0.5, 0.0));
+    auto tileY = static_cast<unsigned long>(max(location.y / tileSize - 0.5, 0.0));
     CollisionInfo collision;
-    for (auto tx = tileX; tx <= tileX + 1 && tx < map.width; tx++) {
-        for (auto ty = tileY; ty <= tileY + 1 && ty < map.height; ty++) {
+    for (auto tx = tileX, txEnd = min(tileX + 1, map.width - 1); tx <= txEnd; tx++) {
+        for (auto ty = tileY, tyEnd = min(tileY + 1, map.height - 1); ty <= tyEnd; ty++) {
             auto tile = map.graph[tx][ty];
 
             auto& wallSegments = allWalls.segments[tx][ty];
@@ -399,9 +400,14 @@ Point CarPosition::bumperCenter() const {
 
 Tile CarPosition::tile() const {
     static const double tileSize = Const::getGame().getTrackTileSize();
+    static const int width = Map::getMap().width;
+    static const int height = Map::getMap().height;
 
     Point bc = bumperCenter();
-    return Tile(static_cast<int>(bc.x / tileSize), static_cast<int>(bc.y / tileSize));
+    return Tile(
+            max(min(static_cast<int>(bc.x / tileSize), width - 1), 0),
+            max(min(static_cast<int>(bc.y / tileSize), height - 1), 0)
+    );
 };
 
 string CarPosition::toString() const {
