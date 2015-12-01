@@ -126,7 +126,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
         if (currentInfo == expectedPosByTick.end()) return;
 
         auto actual = currentState.me();
-        auto predicted = currentInfo->second;
+        auto& predicted = currentInfo->second;
         cout << "tick " << world.getTick() << endl;
         cout << "  my position " << actual.toString() << endl;
         cout << "  predicted " << predicted.toString() << endl;
@@ -168,16 +168,16 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
 // ----
 
 void drawMap() {
-    auto g = Map::getMap().graph;
+    auto& map = Map::getMap();
     const int dx[] = {1, 0, -1, 0};
     const int dy[] = {0, 1, 0, -1};
     const double s = 200.0;
-    for (unsigned long i = 0; i < g.size(); i++) {
-        for (unsigned long j = 0; j < g[i].size(); j++) {
+    for (unsigned long i = 0; i < map.width; i++) {
+        for (unsigned long j = 0; j < map.height; j++) {
             double x = i * s + s/2;
             double y = j * s + s/2;
             for (int d = 0; d < 4; d++) {
-                if (g[i][j] & (1 << d)) {
+                if (map.get(i, j) & (1 << d)) {
                     vis->drawLine(Point(x, y), Point(x + s/2*dx[d], y + s/2*dy[d]));
                 }
             }

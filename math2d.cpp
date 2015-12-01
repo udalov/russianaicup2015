@@ -206,6 +206,7 @@ bool segmentContainsPoint(double x1, double y1, double x2, double y2, double x, 
 }
 
 double Rect::distanceFrom(const Point& point) const {
+    auto& points = myPoints;
     double result = 1e100;
     for (unsigned long i = 0, size = points.size(); i < size; i++) {
         result = min(result, Segment(points[i], points[i + 1 == size ? 0 : i + 1]).distanceFrom(point));
@@ -230,7 +231,7 @@ bool Segment::contains(const Point& point) const {
 }
 
 bool Segment::intersects(const Rect& rect, Point& result) const {
-    auto& points = rect.points;
+    auto& points = rect.points();
     for (unsigned long i = 0, size = points.size(); i < size; i++) {
         if (intersects(points[i], points[i + 1 == size ? 0 : i + 1], result)) return true;
     }
@@ -282,6 +283,7 @@ bool Line::intersects(const Line& other, Point& result) const {
 }
 
 Point Rect::center() const {
+    auto& points = myPoints;
     return Point(
             (points[0].x + points[1].x + points[2].x + points[3].x) / 4,
             (points[0].y + points[1].y + points[2].y + points[3].y) / 4

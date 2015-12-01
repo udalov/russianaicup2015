@@ -131,16 +131,21 @@ struct Line {
     bool intersects(const Line& other, Point& result) const;
 };
 
-struct Rect {
-    vector<Point> points;
-
-    Rect(const vector<Point>& points) : points(points) { }
-    Rect(const Rect& other) : points(other.points) { }
-    Rect(Rect&& other) : points(move(other.points)) { }
+class Rect {
+public:
+    Rect(const vector<Point>& points) : myPoints(points) { }
+    Rect(const Rect& other) : myPoints(other.myPoints) { }
+    Rect(Rect&& other) : myPoints(move(other.myPoints)) { }
 
     double distanceFrom(const Point& point) const;
 
     Point center() const;
+
+    const vector<Point>& points() const { return myPoints; }
+    vector<Point>& points() { return myPoints; }
+
+private:
+    vector<Point> myPoints;
 };
 
 struct Segment {

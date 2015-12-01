@@ -22,18 +22,22 @@ char getEdgesByTileType(TileType type) {
     return 0;
 }
 
+int Map::get(unsigned long x, unsigned long y) const {
+    return static_cast<int>(graph[x * height + y]);
+}
+
 void Map::update(const World& world) {
-    auto tiles = world.getTilesXY();
+    auto& tiles = world.getTilesXY();
 
     if (graph.empty()) {
         width = tiles.size();
         height = tiles[0].size();
-        graph.resize(width, vector<char>(height));
+        graph.resize(width * height);
     }
 
     for (unsigned long i = 0; i < width; i++) {
         for (unsigned long j = 0; j < height; j++) {
-            graph[i][j] = getEdgesByTileType(tiles[i][j]);
+            graph[i * height + j] = getEdgesByTileType(tiles[i][j]);
         }
     }
 }

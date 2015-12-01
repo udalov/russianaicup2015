@@ -7,7 +7,7 @@
 using namespace std;
 
 bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionInfo& result) {
-    auto& points = rect.points;
+    auto& points = rect.points();
     auto intersections = 0;
     Point intersectionSum;
     for (unsigned long i = 0, size = points.size(); i < size; i++) {
@@ -90,7 +90,7 @@ bool collectCircleAndSegment(const Segment& segment, const Circle& circle, Colli
 }
 
 bool collideCircleAndRect(const Rect& rect, const Circle& circle, CollisionInfo& result) {
-    auto& points = rect.points;
+    auto& points = rect.points();
 
     bool collision = false;
     double maxDepth = -1e100;

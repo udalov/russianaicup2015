@@ -12,17 +12,19 @@ public:
     unsigned long width;
     unsigned long height;
 
-    // Each element is a bit mask of edges to (+1, 0) [bit #0], (0, +1), (-1, 0), (0, -1) [bit #3]
-    vector<vector<char>> graph;
-
     static Map& getMap() {
         static Map instance;
         return instance;
     }
 
+    // Each element is a bit mask of edges to (+1, 0) [bit #0], (0, +1), (-1, 0), (0, -1) [bit #3]
+    int get(unsigned long x, unsigned long y) const;
+
     void update(const World& world);
 
 private:
+    vector<char> graph;
+
     Map() { }
     Map(const Map& other) = delete;
     Map *operator=(const Map& other) = delete;

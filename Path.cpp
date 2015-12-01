@@ -101,7 +101,7 @@ vector<DirectedTile> bestPath(const DirectedTile& start, const Tile& finish) {
 
         for (int dd = v.direction >> 1; dd <= (v.direction + 1) >> 1; dd++) {
             int d = dd == 4 ? 0 : dd;
-            if (map.graph[xx][yy] & (1 << d)) {
+            if (map.get(xx, yy) & (1 << d)) {
                 int nx = xx + dx[d], ny = yy + dy[d];
                 auto next = DirectedTile(Tile(nx, ny), v.direction);
                 if (prev.find(next) == prev.end()) {

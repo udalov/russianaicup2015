@@ -159,11 +159,20 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
 }
 
 struct Walls {
-    vector<vector<vector<Segment>>> segments;
-    vector<vector<vector<Circle>>> corners;
+    vector<Segment> segments;
+    vector<Circle> corners;
+    int height;
 
-    Walls(const vector<vector<vector<Segment>>>& segments, const vector<vector<vector<Circle>>>& corners) :
-        segments(segments), corners(corners) { }
+    Walls(const vector<Segment>& segments, const vector<Circle>& corners) :
+        segments(segments), corners(corners), height(Map::getMap().width) { }
+
+    const Segment& segment(unsigned long tx, unsigned long ty, int d) {
+        return segments[((tx * height) + ty) * 4 + d];
+    }
+
+    const Circle& corner(unsigned long tx, unsigned long ty, int d) {
+        return corners[((tx * height) + ty) * 4 + d];
+    }
 
     static Walls *instance;
 };
@@ -172,26 +181,19 @@ Walls *Walls::instance = nullptr;
 
 Walls *computeWalls() {
     static Game& game = Const::getGame();
-    static Map& map = Map::getMap();
+    static const double mapWidth = Map::getMap().width;
+    static const double mapHeight = Map::getMap().height;
     static const double margin = game.getTrackTileMargin() * 1.01; // To avoid driving right against the wall
     static const double tileSize = game.getTrackTileSize();
 
-    auto segments = vector<vector<vector<Segment>>>(map.width, {
-            vector<vector<Segment>>(map.height, {
-                vector<Segment>(4, Segment { Point(), Point() })
-            })
-    });
-    auto circles = vector<vector<vector<Circle>>>(map.width, {
-            vector<vector<Circle>>(map.height, {
-                vector<Circle>(4, Circle { Point(), double() })
-            })
-    });
+    auto segments = vector<Segment>(mapWidth * mapHeight * 4, Segment { Point(), Point() });
+    auto circles = vector<Circle>(mapWidth * mapHeight * 4, Circle { Point(), double() });
 
     static const int dx[] = {1, 0, -1, 0};
     static const int dy[] = {0, 1, 0, -1};
 
-    for (unsigned long tx = 0; tx < map.width; tx++) {
-        for (unsigned long ty = 0; ty < map.height; ty++) {
+    for (unsigned long tx = 0; tx < mapWidth; tx++) {
+        for (unsigned long ty = 0; ty < mapHeight; ty++) {
             for (int d = 0; d < 4; d++) {
                 auto p1 = Point(
                         (tx + max(dx[d] + dy[d], 0)) * tileSize - dx[d] * margin,
@@ -207,13 +209,13 @@ Walls *computeWalls() {
                 if (!(d & 1) && segment.p1.y > segment.p2.y) segment = Segment(segment.p2, segment.p1);
                 if ((d & 1) && segment.p1.x > segment.p2.x) segment = Segment(segment.p2, segment.p1);
 
-                segments[tx][ty][d] = segment;
+                segments[((tx * mapHeight) + ty) * 4 + d] = segment;
 
                 auto p = Point(
                         (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
                         (ty + (dx[d] + dy[d] + 1.) / 2) * tileSize
                 );
-                circles[tx][ty][d] = Circle(p, margin);
+                circles[((tx * mapHeight) + ty) * 4 + d] = Circle(p, margin);
             }
         }
     }
@@ -223,19 +225,66 @@ Walls *computeWalls() {
     return Walls::instance;
 }
 
-void collideCarWithWalls(CarPosition& car) {
-    static Game& game = Const::getGame();
-    static Map& map = Map::getMap();
-    static const double margin = game.getTrackTileMargin();
-    static const double tileSize = game.getTrackTileSize();
-    static const double carRadius = myHypot(game.getCarHeight() / 2, game.getCarWidth() / 2) + EPSILON;
-
-    static auto allWalls = computeWalls();
+void collideCarWithSegmentWall(CarPosition& car, const Segment& wall, int d) {
+    static const double carRadius = myHypot(Const::getGame().getCarHeight() / 2, Const::getGame().getCarWidth() / 2) + EPSILON;
 
     auto& location = car.location;
+    if (!(d & 1)) {
+        if (abs(location.x - wall.p1.x) > carRadius) return;
+        if (location.y < wall.p1.y - carRadius) return;
+        if (location.y > wall.p2.y + carRadius) return;
+    } else {
+        if (abs(location.y - wall.p1.y) > carRadius) return;
+        if (location.x < wall.p1.x - carRadius) return;
+        if (location.x > wall.p2.x + carRadius) return;
+    }
 
-    unsigned long txBegin = map.width - 1, txEnd = 0, tyBegin = map.height - 1, tyEnd = 0;
-    for (auto& point : car.rectangle.points) {
+    CollisionInfo collision;
+    if (collideRectAndSegment(car.rectangle, wall, collision)) {
+        /*
+        if (D) {
+            cout << "segment collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
+            cout << "  " << car.toString() << endl;
+            cout << "  (with segment " << wall.p1.toString() << " -> " << wall.p2.toString() << ")" << endl;
+        }
+        */
+        resolveWallCollision(collision, car);
+    }
+}
+
+void collideCarWithCornerWall(CarPosition& car, const Circle& corner) {
+    static const double carRadius = myHypot(Const::getGame().getCarHeight() / 2, Const::getGame().getCarWidth() / 2) + EPSILON;
+    static const double margin = Const::getGame().getTrackTileMargin();
+
+    if (car.location.distanceTo(corner.center) > margin + carRadius) return;
+    if (car.rectangle.distanceFrom(corner.center) > margin + EPSILON) return;
+
+    CollisionInfo collision;
+    if (collideCircleAndRect(car.rectangle, corner, collision)) {
+        /*
+        if (D) {
+            cout << "corner collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
+            cout << "  " << car.toString() << endl;
+            cout << "  (with corner at " << p.toString() << ")" << endl;
+        }
+        */
+        resolveWallCollision(collision, car);
+    }
+}
+
+void determineTileBounds(
+        const Rect& rectangle, unsigned long& txBegin, unsigned long& txEnd, unsigned long& tyBegin, unsigned long& tyEnd
+) {
+    static const unsigned long mapWidth = Map::getMap().width;
+    static const unsigned long mapHeight = Map::getMap().height;
+    static const double tileSize = Const::getGame().getTrackTileSize();
+
+    txBegin = mapWidth - 1;
+    txEnd = 0ul;
+    tyBegin = mapHeight - 1;
+    tyEnd = 0ul;
+
+    for (auto& point : rectangle.points()) {
         auto px = static_cast<unsigned long>(point.x / tileSize);
         auto py = static_cast<unsigned long>(point.y / tileSize);
         txBegin = min(txBegin, px);
@@ -243,58 +292,31 @@ void collideCarWithWalls(CarPosition& car) {
         tyBegin = min(tyBegin, py);
         tyEnd = max(tyEnd, py);
     }
-    txBegin = max(txBegin, 0ul);
-    txEnd = min(txEnd, map.width - 1);
-    tyBegin = max(tyBegin, 0ul);
-    tyEnd = min(tyEnd, map.height - 1);
 
-    CollisionInfo collision;
+    txBegin = max(txBegin, 0ul);
+    txEnd = min(txEnd, mapWidth - 1);
+    tyBegin = max(tyBegin, 0ul);
+    tyEnd = min(tyEnd, mapHeight - 1);
+}
+
+void collideCarWithWalls(CarPosition& car) {
+    static Map& map = Map::getMap();
+
+    static Walls *allWalls = computeWalls();
+
+    unsigned long txBegin, txEnd, tyBegin, tyEnd;
+    determineTileBounds(car.rectangle, txBegin, txEnd, tyBegin, tyEnd);
+
     for (auto tx = txBegin; tx <= txEnd; tx++) {
         for (auto ty = tyBegin; ty <= tyEnd; ty++) {
-            auto tile = map.graph[tx][ty];
+            int tile = map.get(tx, ty);
 
-            auto& wallSegments = allWalls->segments[tx][ty];
             for (int d = 0; d < 4; d++) {
-                if (tile & (1 << d)) continue;
-
-                auto& wall = wallSegments[d];
-                if (!(d & 1)) {
-                    if (abs(location.x - wall.p1.x) > carRadius) continue;
-                    if (location.y < wall.p1.y - carRadius) continue;
-                    if (location.y > wall.p2.y + carRadius) continue;
-                } else {
-                    if (abs(location.y - wall.p1.y) > carRadius) continue;
-                    if (location.x < wall.p1.x - carRadius) continue;
-                    if (location.x > wall.p2.x + carRadius) continue;
+                if (!(tile & (1 << d))) {
+                    collideCarWithSegmentWall(car, allWalls->segment(tx, ty, d), d);
                 }
-
-                if (collideRectAndSegment(car.rectangle, wall, collision)) {
-                    /*
-                    if (D) {
-                        cout << "segment collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
-                        cout << "  " << car.toString() << endl;
-                        cout << "  (with segment " << wall.p1.toString() << " -> " << wall.p2.toString() << ")" << endl;
-                    }
-                    */
-                    resolveWallCollision(collision, car);
-                }
-            }
-
-            auto& wallCorners = allWalls->corners[tx][ty];
-            for (int d = 0; d < 4; d++) {
-                if (!(tile & (1 << d)) || !(tile & (1 << ((d + 1) & 3)))) continue;
-                auto& corner = wallCorners[d];
-                if (location.distanceTo(corner.center) > margin + carRadius) continue;
-                if (car.rectangle.distanceFrom(corner.center) > margin + EPSILON) continue;
-                if (collideCircleAndRect(car.rectangle, corner, collision)) {
-                    /*
-                    if (D) {
-                        cout << "corner collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
-                        cout << "  " << car.toString() << endl;
-                        cout << "  (with corner at " << p.toString() << ")" << endl;
-                    }
-                    */
-                    resolveWallCollision(collision, car);
+                if ((tile & (1 << d)) && (tile & (1 << ((d + 1) & 3)))) {
+                    collideCarWithCornerWall(car, allWalls->corner(tx, ty, d));
                 }
             }
         }
@@ -384,7 +406,7 @@ void CarPosition::advance(const Go& move) {
     // Location
 
     location += velocity;
-    for (auto& point : rectangle.points) {
+    for (auto& point : rectangle.points()) {
         point += velocity;
     }
 

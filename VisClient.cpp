@@ -73,7 +73,7 @@ void VisClient::drawPoly(const vector<Point>& points) {
 }
 
 void VisClient::drawRect(const Rect& rectangle) {
-    drawPoly(rectangle.points);
+    drawPoly(rectangle.points());
 }
 
 void VisClient::drawCircle(const Point& center, double radius) {
