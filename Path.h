@@ -2,9 +2,11 @@
 
 #include "math2d.h"
 
+#include <functional>
 #include <string>
 #include <vector>
 
+using std::hash;
 using std::string;
 using std::vector;
 
@@ -16,15 +18,10 @@ struct Tile {
     Tile(int x, int y): x(x), y(y) { }
     Tile(const Tile& other): x(other.x), y(other.y) { }
 
-    Tile *operator=(const Tile& other) {
-        x = other.x;
-        y = other.y;
-        return this;
-    }
+    Tile *operator=(const Tile& other);
 
-    bool operator==(const Tile& other) const {
-        return x == other.x && y == other.y;
-    }
+    bool operator==(const Tile& other) const;
+    bool operator!=(const Tile& other) const;
 
     unsigned int manhattanDistanceTo(const Tile& other) const;
     bool isNeighborTo(const Tile& other) const;
@@ -34,4 +31,24 @@ struct Tile {
     string toString() const;
 };
 
-vector<Tile> bestPath(const Tile& start, const Tile& finish);
+struct DirectedTile {
+    Tile tile;
+    int direction; // 0..7
+
+    DirectedTile(const Tile& tile, int direction): tile(tile), direction(direction) { }
+
+    bool operator==(const DirectedTile& other) const;
+
+    DirectedTile turnLeft() const;
+    DirectedTile turnRight() const;
+
+    string toString() const;
+};
+
+namespace std {
+    template<> struct hash<DirectedTile> {
+        size_t operator()(const DirectedTile& dt) const;
+    };
+}
+
+vector<DirectedTile> bestPath(const DirectedTile& start, const Tile& finish);

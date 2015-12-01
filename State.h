@@ -45,6 +45,7 @@ struct CarPosition {
 
     Point bumperCenter() const;
     Tile tile() const;
+    DirectedTile directedTile() const;
 
     string toString() const;
 };

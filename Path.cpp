@@ -10,6 +10,32 @@
 
 using namespace std;
 
+Tile *Tile::operator=(const Tile& other) {
+    x = other.x;
+    y = other.y;
+    return this;
+}
+
+bool Tile::operator==(const Tile& other) const {
+    return x == other.x && y == other.y;
+}
+
+bool Tile::operator!=(const Tile& other) const {
+    return x != other.x || y != other.y;
+}
+
+bool DirectedTile::operator==(const DirectedTile& other) const {
+    return tile == other.tile && direction == other.direction;
+}
+
+DirectedTile DirectedTile::turnLeft() const {
+    return DirectedTile(tile, direction == 0 ? 7 : direction - 1);
+}
+
+DirectedTile DirectedTile::turnRight() const {
+    return DirectedTile(tile, direction == 7 ? 0 : direction + 1);
+}
+
 unsigned int Tile::manhattanDistanceTo(const Tile& other) const {
     return abs(x - other.x) + abs(y - other.y);
 }
@@ -29,48 +55,70 @@ string Tile::toString() const {
     return ss.str();
 }
 
-vector<Tile> bestPath(const Tile& start, const Tile& finish) {
+string DirectedTile::toString() const {
+    ostringstream ss;
+    ss << "[" << tile.x << "," << tile.y << "," << direction << "]";
+    return ss.str();
+}
+
+namespace std {
+    size_t hash<DirectedTile>::operator()(const DirectedTile& dt) const {
+        return (dt.tile.x << 16) | (dt.tile.y << 8) | dt.direction;
+    }
+}
+
+vector<DirectedTile> bestPath(const DirectedTile& start, const Tile& finish) {
     static const int dx[] = {1, 0, -1, 0};
     static const int dy[] = {0, 1, 0, -1};
     auto& map = Map::getMap();
 
-    if (start == finish) return { finish };
+    if (start.tile == finish) return { start };
     
-    int startEnc = (start.x << 8) + start.y;
-    int finishEnc = (finish.x << 8) + finish.y;
-
-    vector<int> q;
-    unordered_map<int, int> prev;
-    q.push_back(startEnc);
-    prev[startEnc] = -1;
+    vector<DirectedTile> q;
+    unordered_map<DirectedTile, DirectedTile> prev;
+    q.push_back(start);
     unsigned long qb = 0;
     while (qb < q.size()) {
-        int v = q[qb++];
-        int xx = v >> 8, yy = v & 255;
-        if (v == finishEnc) {
-            vector<Tile> result;
-            result.reserve(start.manhattanDistanceTo(finish) + 1);
+        auto v = q[qb++];
+        int xx = v.tile.x, yy = v.tile.y;
+        if (v.tile == finish) {
+            vector<DirectedTile> result;
+            result.reserve(start.tile.manhattanDistanceTo(finish) + 1); // TODO
             while (prev.find(v) != prev.end()) {
-                result.emplace_back(v >> 8, v & 255);
-                if (prev[v] == startEnc) break;
-                v = prev[v];
+                result.push_back(v);
+                auto w = prev.find(v);
+                if (w == prev.end()) {
+                    cerr << "bad path: " << start.toString() << " to " << finish.toString() << endl;
+                    break;
+                }
+                if (w->second == start) break;
+                v = w->second;
             }
             result.push_back(start);
             reverse(result.begin(), result.end());
             return result;
         }
-        for (int d = 0; d < 4; d++) {
+
+        for (int dd = v.direction >> 1; dd <= (v.direction + 1) >> 1; dd++) {
+            int d = dd == 4 ? 0 : dd;
             if (map.graph[xx][yy] & (1 << d)) {
                 int nx = xx + dx[d], ny = yy + dy[d];
-                int nv = (nx << 8) + ny;
-                if (prev.find(nv) == prev.end()) {
-                    prev[nv] = v;
-                    q.push_back(nv);
+                auto next = DirectedTile(Tile(nx, ny), v.direction);
+                if (prev.find(next) == prev.end()) {
+                    prev.insert({ next, v });
+                    q.push_back(next);
                 }
+            }
+        }
+
+        for (auto& next : { v.turnLeft(), v.turnRight() }) {
+            if (prev.find(next) == prev.end()) {
+                prev.insert({ next, v });
+                q.push_back(next);
             }
         }
     }
     
     cerr << "path not found from " << start.toString() << " to " << finish.toString() << endl;
-    return { start, finish };
+    return { start, DirectedTile(finish, start.direction) };
 }

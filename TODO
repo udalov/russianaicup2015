@@ -1,2 +1,8 @@
 major:
-- account number of turns, number of bonuses in the path finder
+- use Dijkstra with bonuses in path finder
+normal:
+- do not take first path of empty track
+
+jeeps
+bonuses
+nitro

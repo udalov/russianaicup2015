@@ -406,7 +406,7 @@ void CarPosition::advance(const Go& move) {
 
     // Angle
 
-    angle += angularSpeed;
+    angle = normalizeAngle(angle + angularSpeed);
 }
 
 CarPosition::CarPosition(const Car *car) : original(car),
@@ -438,6 +438,13 @@ Tile CarPosition::tile() const {
             max(min(static_cast<int>(bc.y / tileSize), height - 1), 0)
     );
 };
+
+DirectedTile CarPosition::directedTile() const {
+    double positiveAngle = normalizeAngle(angle);
+    if (positiveAngle < 0) positiveAngle += M_PI + M_PI;
+    int direction = static_cast<int>(positiveAngle * 4.0 / M_PI + 0.5) % 8;
+    return DirectedTile(tile(), direction);
+}
 
 string CarPosition::toString() const {
     ostringstream ss;

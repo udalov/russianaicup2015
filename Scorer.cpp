@@ -65,13 +65,11 @@ double Scorer::score(const State& state, bool debug) const {
     // auto& nextNext = pathSegment[nextSeg];
     // auto& nextNextNext = pathSegment[nextSeg + 1];
 
-    /*
     if (debug) {
         cout << state.original->getTick(); for (auto& tile : path) cout << " " << tile.toString(); cout << endl;
         cout << "  start " << startState.me().tile().toString() << " cur " << me.tile().toString() << " start-seg " << startSeg << " next-seg " << nextSeg
             << " cur " << cur.toString() << " next " << next.toString() << endl;
     }
-    */
 
     auto curHealthDelta = min(me.health - startState.me().health + 0.03, 0.0);
 

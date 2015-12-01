@@ -245,14 +245,19 @@ Go solve(const World& world, const vector<Tile>& path) {
 vector<Tile> computePath(const Car& self, const World& world, const Game& game) {
     auto& waypoints = world.getWaypoints();
     int i = self.getNextWaypointIndex();
-    Tile start = CarPosition(&self).tile();
+    DirectedTile start = CarPosition(&self).directedTile();
     vector<Tile> result;
-    result.push_back(start);
+    result.push_back(start.tile);
     for (int steps = 0; steps < 5; steps++) {
         Tile finish = Tile(waypoints[i][0], waypoints[i][1]);
         auto path = bestPath(start, finish);
-        result.insert(result.end(), path.begin() + 1, path.end());
-        start = finish;
+cout << "  path from " << start.toString() << " to " << finish.toString() << ":"; for (auto& p : path) cout << " " << p.toString(); cout << endl;
+        for (auto it = path.begin() + 1; it != path.end(); ++it) {
+            if (it->tile != result.back()) {
+                result.push_back(it->tile);
+            }
+        }
+        start = path.back();
         i = (i + 1) % waypoints.size();
     }
     return result;
