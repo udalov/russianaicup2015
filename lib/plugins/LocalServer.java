@@ -46,6 +46,7 @@ public class LocalServer {
                         messages.add(string);
                     }
                 } catch (Exception e) {
+                    e.printStackTrace();
                     throw new RuntimeException(e);
                 }
             }

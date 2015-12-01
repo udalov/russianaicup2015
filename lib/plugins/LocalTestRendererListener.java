@@ -42,7 +42,11 @@ public final class LocalTestRendererListener {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
         for (String message : messages) {
-            handleMessage(graphics, message);
+            try {
+                handleMessage(graphics, message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

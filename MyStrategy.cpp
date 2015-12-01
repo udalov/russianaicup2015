@@ -227,9 +227,12 @@ Go solve(const World& world, const vector<Tile>& path) {
         auto state = State(startState);
         for (auto& go : bestTrack.moves) {
             state.apply(go);
+            // vis->drawRect(state.me().rectangle);
         }
         vis->drawRect(state.me().rectangle);
-        cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score << " best-move " << bestMove.toString() << endl;
+        cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score <<
+            " best-move " << bestMove.toString() << " " << state.me().toString() << endl;
+        scorer.score(state, true);
     }
 
     previousTracks.resize(tracks.size());

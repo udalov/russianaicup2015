@@ -132,10 +132,16 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
     // if (D) cout << "vec-bc " << vecBC.toString() << " relative-velocity " << relativeVelocity.toString() << endl;
     if (relativeVelocity * normal < EPSILON) {
         // TODO: optimize
-        // resolveImpact(collision, car, normal, vecBC, relativeVelocity);
-        // resolveSurfaceFriction(collision, car, normal, vecBC, relativeVelocity);
+        resolveImpact(collision, car, normal, vecBC, relativeVelocity);
+        resolveSurfaceFriction(collision, car, normal, vecBC, relativeVelocity);
     }
     */
+
+    // TODO: dirty hack
+    auto speed = car.velocity.length();
+    if (speed > EPSILON) {
+        car.velocity *= (car.velocity * collision.normal) / speed;
+    }
 
     if (collision.depth > EPSILON) {
         car.location -= collision.normal * (collision.depth + EPSILON);
@@ -432,7 +438,7 @@ Tile CarPosition::tile() const {
 
 string CarPosition::toString() const {
     ostringstream ss;
-    ss.precision(8);
+    ss.precision(3);
     ss << fixed << "car at " << location.toString() <<
             " going " << velocity.toString() <<
             " angle " << angle <<
