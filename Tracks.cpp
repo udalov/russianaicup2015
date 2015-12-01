@@ -1,27 +1,28 @@
 #include "Tracks.h"
 #include "Const.h"
+#include "Go.h"
 
 #include <algorithm>
 #include <random>
 
 using namespace std;
 
+using WheelTurnDirection::TURN_LEFT;
+using WheelTurnDirection::KEEP;
+using WheelTurnDirection::TURN_RIGHT;
+
 bool Track::operator<(const Track& other) const {
     return score < other.score;
 }
 
-Track Track::drop(int ticks) const {
-    return Track(vector<Go>(moves.begin() + ticks, moves.end()));
+Track Track::drop(unsigned long ticks) const {
+    return Track(vector<Go>(moves.begin() + min(ticks, moves.size()), moves.end()));
 }
 
-vector<Go> collectMoves(
-        double engineFrom, double engineTo, double engineStep,
-        double wheelFrom, double wheelTo, double wheelStep,
-        bool brake
-) {
+vector<Go> collectMoves(double engineFrom, double engineTo, double engineStep, bool brake) {
     vector<Go> result;
     for (double e = engineFrom; e <= engineTo; e += engineStep) {
-        for (double w = wheelFrom; w <= wheelTo; w += wheelStep) {
+        for (auto& w : { TURN_LEFT, KEEP, TURN_RIGHT }) {
             for (int b = 0; b <= brake; b++) {
                 result.emplace_back(e, w, (bool) b);
             }
@@ -46,40 +47,23 @@ default_random_engine createRandomEngine() {
 }
 
 void collectTracks(const CarPosition& me, vector<Track>& result) {
-    static const double carEnginePowerChangePerTick = Const::getGame().getCarEnginePowerChangePerTick();
-    static const double carWheelTurnChangePerTick = Const::getGame().getCarWheelTurnChangePerTick();
-
     static auto rng = createRandomEngine();
 
-    const int firstDuration = 10;
+    const int firstDuration = 5;
     const int secondDuration = 25;
     const int thirdDuration = 50;
 
-    // TODO: more turns
-    auto firstMoves = collectMoves(1.0, 1.0, 1.0, -1.0, 1.0, 0.25, true);
-    for (auto brake : { false, true }) {
-        firstMoves.emplace_back(me.enginePower, me.wheelTurn, brake);
+    auto firstMoves = collectMoves(1.0, 1.0, 1.0, true);
+    if (me.enginePower != 1.0) {
+        for (auto& wheel : { TURN_LEFT, KEEP, TURN_RIGHT }) {
+            for (auto brake : { false, true }) {
+                firstMoves.emplace_back(me.enginePower, wheel, brake);
+            }
+        }
     }
-    auto secondMovesBase = collectMoves(1.0, 1.0, 1.0, -1.0, 1.0, 1.0, true);
-    auto thirdMovesBase = collectMoves(1.0, 1.0, 1.0, -1.0, 1.0, 1.0, true);
+    auto secondMovesBase = collectMoves(1.0, 1.0, 1.0, true);
+    auto thirdMovesBase = collectMoves(1.0, 1.0, 1.0, true);
 
-    for (unsigned long i = 0; i < firstMoves.size(); i++) {
-        auto& go = firstMoves[i];
-        bool remove = false;
-        if (go.enginePower != -1.0 && go.enginePower != 1.0 &&
-            abs(me.enginePower - go.enginePower) > firstDuration * carEnginePowerChangePerTick) {
-            remove = true;
-        }
-        if (go.wheelTurn != -1.0 && go.wheelTurn != 1.0 &&
-            abs(me.wheelTurn - go.wheelTurn) > firstDuration * carWheelTurnChangePerTick) {
-            remove = true;
-        }
-        if (remove) {
-            firstMoves.erase(firstMoves.begin() + i);
-            i--;
-        }
-    }
-    
     for (auto& firstMove : firstMoves) {
         vector<Go> moves;
         for (int i = 0; i < firstDuration; i++) {

@@ -20,7 +20,7 @@ struct Track {
 
     bool operator<(const Track& other) const;
 
-    Track drop(int ticks) const;
+    Track drop(unsigned long ticks) const;
 };
 
 void collectTracks(const CarPosition& me, vector<Track>& result);

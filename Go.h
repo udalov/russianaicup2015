@@ -1,25 +1,33 @@
 #pragma once
 
+#include "model/Car.h"
 #include "model/Move.h"
 
 #include <string>
 
+using model::Car;
 using model::Move;
 using std::string;
 
+enum class WheelTurnDirection {
+    TURN_LEFT,
+    KEEP,
+    TURN_RIGHT,
+};
+
 struct Go {
     double enginePower;
-    double wheelTurn;
+    WheelTurnDirection wheelTurn;
     // TODO: pack
     bool brake;
     bool throwProjectile;
     bool useNitro;
     bool spillOil;
 
-    Go() : enginePower(), wheelTurn(), brake(), throwProjectile(), useNitro(), spillOil() { }
+    Go() : enginePower(), wheelTurn(WheelTurnDirection::KEEP), brake(), throwProjectile(), useNitro(), spillOil() { }
 
     Go(double enginePower,
-       double wheelTurn,
+       WheelTurnDirection wheelTurn,
        bool brake = false,
        bool throwProjectile = false,
        bool useNitro = false,
@@ -29,7 +37,7 @@ struct Go {
 
     bool operator==(const Go& other) const;
 
-    void applyTo(Move& move) const;
+    void applyTo(const Car& car, Move& move) const;
 
     string toString() const;
 };

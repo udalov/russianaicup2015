@@ -17,6 +17,10 @@
 using namespace model;
 using namespace std;
 
+using WheelTurnDirection::TURN_LEFT;
+using WheelTurnDirection::KEEP;
+using WheelTurnDirection::TURN_RIGHT;
+
 // #define DEBUG_PHYSICS_PREDICTION
 // #define NO_REVERSE_MODE
 
@@ -56,35 +60,35 @@ const DPPMode mode = DPPMode::FULL_SPEED_TURN_ON_DEFAULT_MAP;
 Go goDebugPhysicsPrediction(int tick) {
     if (mode == DPPMode::COLLISION_WITH_SEGMENT_HIGH_SPEED) {
         if (tick == 181) {
-            return Go(1.0, 1.0, false, false, true);
+            return Go(1.0, TURN_RIGHT, false, false, true);
         }
         if (280 <= tick && tick < 285) {
-            return Go(1.0, 1.0);
+            return Go(1.0, TURN_RIGHT);
         }
-        return Go(1.0, 0.0);
+        return Go(1.0, KEEP);
     } else if (mode == DPPMode::COLLISION_WITH_SEGMENT_SIDEWAYS) {
         if (400 <= tick && tick < 450) {
-            return Go(-1.0, 1.0);
+            return Go(-1.0, TURN_RIGHT);
         }
-        return Go(1.0, 0.0);
+        return Go(1.0, KEEP);
     } else if (mode == DPPMode::COLLISION_WITH_CORNER) {
         if (375 <= tick && tick < 450) {
-            return Go(-1.0, 1.0);
+            return Go(-1.0, TURN_RIGHT);
         }
         if (450 <= tick && tick < 480) {
-            return Go(-1.0, 0.0);
+            return Go(-1.0, KEEP);
         }
-        return Go(1.0, 0.0);
+        return Go(1.0, KEEP);
     } else if (mode == DPPMode::BRAKE) {
         if (250 <= tick && tick <= 260) {
-            return Go(1.0, 0.0, true);
+            return Go(1.0, KEEP, true);
         }
-        return Go(1.0, 0.0);
+        return Go(1.0, KEEP);
     } else if (mode == DPPMode::FULL_SPEED_TURN_ON_DEFAULT_MAP) {
         if (400 <= tick && tick <= 450) {
-            return Go(-1.0, 1.0, 405 <= tick && tick <= 430);
+            return Go(-1.0, TURN_RIGHT, 405 <= tick && tick <= 430);
         }
-        return Go(1.0, 0.0);
+        return Go(1.0, KEEP);
     } else {
         terminate();
     }
@@ -111,12 +115,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
     static unordered_map<int, CarPosition> expectedPosByTick;
 
     auto experimentalMove = goDebugPhysicsPrediction(world.getTick());
-    move.setEnginePower(experimentalMove.enginePower);
-    move.setWheelTurn(experimentalMove.wheelTurn);
-    move.setBrake(experimentalMove.brake);
-    move.setThrowProjectile(experimentalMove.throwProjectile);
-    move.setUseNitro(experimentalMove.useNitro);
-    move.setSpillOil(experimentalMove.spillOil);
+    experimentalMove.applyTo(self, move);
 
     auto currentState = State(&world);
 
@@ -273,7 +272,7 @@ bool reverseMode(const CarPosition& me, const World& world, Go& result) {
     // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick << " reverse-until " << reverseUntilTick << " wait-until " << waitUntilTick << " non-zero " << nonZeroSpeed << endl;
 
     if (tick <= reverseUntilTick) {
-        result = Go(-1.0, 0.0, me.enginePower > 0.0);
+        result = Go(-1.0, KEEP, me.enginePower > 0.0);
         return true;
     }
 
@@ -326,14 +325,14 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 
     Go reverse;
     if (reverseMode(CarPosition(&self), world, reverse)) {
-        reverse.applyTo(move);
+        reverse.applyTo(self, move);
         return;
     }
 
     auto path = computePath(self, world, game);
 
     Go solution = solve(world, path);
-    solution.applyTo(move);
+    solution.applyTo(self, move);
 
 #ifdef VISUALIZE
     printMove(move);

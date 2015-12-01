@@ -13,9 +13,15 @@ bool Go::operator==(const Go& other) const {
             spillOil == other.spillOil;
 }
 
-void Go::applyTo(Move& move) const {
+void Go::applyTo(const Car& car, Move& move) const {
     move.setEnginePower(enginePower);
-    move.setWheelTurn(wheelTurn);
+
+    switch (wheelTurn) {
+        case WheelTurnDirection::TURN_LEFT: move.setWheelTurn(-1.0); break;
+        case WheelTurnDirection::KEEP: move.setWheelTurn(car.getWheelTurn()); break;
+        case WheelTurnDirection::TURN_RIGHT: move.setWheelTurn(1.0); break;
+    }
+
     move.setBrake(brake);
     move.setThrowProjectile(throwProjectile);
     move.setUseNitro(useNitro);
@@ -25,7 +31,12 @@ void Go::applyTo(Move& move) const {
 string Go::toString() const {
     ostringstream ss;
     ss.precision(3);
-    ss << fixed << "(engine " << enginePower << " wheels " << wheelTurn;
+    ss << fixed << "(" << enginePower << " ";
+    switch (wheelTurn) {
+        case WheelTurnDirection::TURN_LEFT: ss << "TURN_LEFT"; break;
+        case WheelTurnDirection::KEEP: ss << "KEEP"; break;
+        case WheelTurnDirection::TURN_RIGHT: ss << "TURN_RIGHT"; break;
+    }
     if (brake) ss << " BRAKE";
     if (throwProjectile) ss << " FIRE";
     if (useNitro) ss << " NITRO";

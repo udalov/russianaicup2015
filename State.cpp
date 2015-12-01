@@ -43,10 +43,13 @@ double updateEnginePower(double carEnginePower, double moveEnginePower) {
     return carEnginePower + min(max(delta, -maxChange), maxChange);
 }
 
-double updateWheelTurn(double carWheelTurn, double moveWheelTurn) {
+double updateWheelTurn(double carWheelTurn, WheelTurnDirection direction) {
     static double maxChange = Const::getGame().getCarWheelTurnChangePerTick();
-    auto delta = moveWheelTurn - carWheelTurn;
-    return carWheelTurn + min(max(delta, -maxChange), maxChange);
+    switch (direction) {
+        case WheelTurnDirection::TURN_LEFT: return max(carWheelTurn - maxChange, -1.0);
+        case WheelTurnDirection::KEEP: return carWheelTurn;
+        case WheelTurnDirection::TURN_RIGHT: return min(carWheelTurn + maxChange, 1.0);
+    }
 }
 
 Vec3D toVec3D(const Vec& vec) {

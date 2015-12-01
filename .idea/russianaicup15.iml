@@ -3,6 +3,8 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Collider.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Collider.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Const.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Const.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/csimplesocket/ActiveSocket.cpp" isTestSource="false" />
@@ -13,6 +15,8 @@
       <sourceFolder url="file://$MODULE_DIR$/csimplesocket/PassiveSocket.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/csimplesocket/SimpleSocket.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/csimplesocket/SimpleSocket.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Debug.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Debug.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Go.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Go.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/main.cpp" isTestSource="false" />
@@ -20,6 +24,8 @@
       <sourceFolder url="file://$MODULE_DIR$/Map.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/math2d.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/math2d.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/math3d.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/math3d.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/model/Bonus.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/model/Bonus.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/model/Car.cpp" isTestSource="false" />
@@ -46,11 +52,15 @@
       <sourceFolder url="file://$MODULE_DIR$/model/World.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/MyStrategy.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/MyStrategy.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Path.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Path.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/RemoteProcessClient.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/RemoteProcessClient.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/runner-main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Runner.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Runner.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Scorer.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Scorer.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/State.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/State.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Strategy.cpp" isTestSource="false" />
@@ -61,6 +71,8 @@
       <sourceFolder url="file://$MODULE_DIR$/test/gtest-1.7.0/src/gtest-all.cc" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/gtest-1.7.0/src/gtest_main.cc" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/Math2DTest.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tracks.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Tracks.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/VisClient.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/VisClient.h" isTestSource="false" />
     </content>
