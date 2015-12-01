@@ -263,7 +263,7 @@ cout << "  path from " << start.toString() << " to " << finish.toString() << ":"
     return result;
 }
 
-bool reverseMode(const CarPosition& me, const World& world, Go& result) {
+bool reverseMode(const CarPosition& me, const World& world) {
 #ifdef NO_REVERSE_MODE
     return false;
 #else
@@ -276,10 +276,7 @@ bool reverseMode(const CarPosition& me, const World& world, Go& result) {
 
     // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick << " reverse-until " << reverseUntilTick << " wait-until " << waitUntilTick << " non-zero " << nonZeroSpeed << endl;
 
-    if (tick <= reverseUntilTick) {
-        result = Go(-1.0, KEEP, me.enginePower > 0.0);
-        return true;
-    }
+    if (tick <= reverseUntilTick) return true;
 
     if (nonZeroSpeed || tick <= reverseUntilTick || tick <= waitUntilTick) {
         lastNonZeroSpeedTick = tick;
@@ -328,9 +325,12 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         return;
     }
 
-    Go reverse;
-    if (reverseMode(CarPosition(&self), world, reverse)) {
-        reverse.applyTo(self, move);
+    if (reverseMode(CarPosition(&self), world)) {
+        move.setEnginePower(-1.0);
+        move.setWheelTurn(0.0);
+        if (self.getEnginePower() > 0.0) {
+            move.setBrake(true);
+        }
         return;
     }
 
