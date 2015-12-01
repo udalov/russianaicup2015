@@ -63,8 +63,11 @@ Vec3D toVec3D(const Point& p1, const Point& p2) {
 void resolveImpact(
         const CollisionInfo& collision, CarPosition& car, const Vec3D& normal, const Vec3D& vecBC, const Vec3D& relativeVelocity
 ) {
-    static const double invertedCarMass = 1.0 / Const::getGame().getBuggyMass();
+    static const double invertedBuggyMass = 1.0 / Const::getGame().getBuggyMass();
+    static const double invertedJeepMass = 1.0 / Const::getGame().getJeepMass();
     static const double momentumTransferFactor = 0.3; // ?!
+
+    double invertedCarMass = car.isBuggy() ? invertedBuggyMass : invertedJeepMass;
 
     double invertedCarAngularMass = car.angularSpeed * invertedCarMass / car.velocity.length();
 
@@ -90,8 +93,11 @@ void resolveImpact(
 void resolveSurfaceFriction(
         const CollisionInfo& collision, CarPosition& car, const Vec3D& normal, const Vec3D& vecBC, const Vec3D& relativeVelocity
 ) {
-    static const double invertedCarMass = 1.0 / Const::getGame().getBuggyMass();
+    static const double invertedBuggyMass = 1.0 / Const::getGame().getBuggyMass();
+    static const double invertedJeepMass = 1.0 / Const::getGame().getJeepMass();
     static const double surfaceFrictionFactor = 0.015; // ?!
+
+    double invertedCarMass = car.isBuggy() ? invertedBuggyMass : invertedJeepMass;
 
     double invertedCarAngularMass = car.angularSpeed * invertedCarMass / car.velocity.length();
 
@@ -344,6 +350,9 @@ void CarPosition::advance(const Go& move) {
     static const int nitroDurationTicks = game.getNitroDurationTicks();
     static const double nitroEnginePowerFactor = game.getNitroEnginePowerFactor();
 
+    static const double jeepEngineRearAcceleration = game.getJeepEngineRearPower() / game.getJeepMass();
+    static const double jeepEngineForwardAcceleration = game.getJeepEngineForwardPower() / game.getJeepMass();
+
     static const double buggyEngineRearAcceleration = game.getBuggyEngineRearPower() / game.getBuggyMass();
     static const double buggyEngineForwardAcceleration = game.getBuggyEngineForwardPower() / game.getBuggyMass();
 
@@ -379,7 +388,10 @@ void CarPosition::advance(const Go& move) {
     }
 
     if (!move.brake) {
-        auto acceleration = enginePower * (enginePower < 0 ? buggyEngineRearAcceleration : buggyEngineForwardAcceleration);
+        auto acceleration = enginePower * (enginePower < 0 ?
+                (isBuggy() ? buggyEngineRearAcceleration : jeepEngineRearAcceleration):
+                (isBuggy() ? buggyEngineForwardAcceleration : jeepEngineForwardAcceleration)
+        );
         velocity += dir * acceleration;
     }
 
@@ -438,6 +450,10 @@ Tile CarPosition::tile() const {
             max(min(static_cast<int>(bc.y / tileSize), height - 1), 0)
     );
 };
+
+bool CarPosition::isBuggy() const {
+    return original->getType() == model::CarType::BUGGY;
+}
 
 DirectedTile CarPosition::directedTile() const {
     double positiveAngle = normalizeAngle(angle);

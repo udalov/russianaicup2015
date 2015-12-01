@@ -43,6 +43,8 @@ struct CarPosition {
 
     void advance(const Go& move);
 
+    bool isBuggy() const;
+
     Point bumperCenter() const;
     Tile tile() const;
     DirectedTile directedTile() const;
