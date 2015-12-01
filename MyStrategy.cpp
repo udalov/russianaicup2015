@@ -270,7 +270,7 @@ bool reverseMode(const CarPosition& me, const World& world, Go& result) {
     // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick << " reverse-until " << reverseUntilTick << " wait-until " << waitUntilTick << " non-zero " << nonZeroSpeed << endl;
 
     if (tick <= reverseUntilTick) {
-        result = Go(-1.0, 0.0);
+        result = Go(-1.0, 0.0, me.enginePower > 0.0);
         return true;
     }
 
