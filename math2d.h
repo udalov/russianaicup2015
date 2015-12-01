@@ -83,6 +83,12 @@ struct Point {
         return this;
     }
 
+    Point *operator=(Point&& other) {
+        x = other.x;
+        y = other.y;
+        return this;
+    }
+
     bool operator==(const Point& other) const {
         return abs(x - other.x) < eps_equality && abs(y - other.y) < eps_equality;
     }
@@ -130,6 +136,7 @@ struct Rect {
 
     Rect(const vector<Point>& points) : points(points) { }
     Rect(const Rect& other) : points(other.points) { }
+    Rect(Rect&& other) : points(move(other.points)) { }
 
     double distanceFrom(const Point& point) const;
 

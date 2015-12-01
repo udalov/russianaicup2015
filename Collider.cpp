@@ -11,9 +11,8 @@ bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionIn
     auto intersections = 0;
     Point intersectionSum;
     for (unsigned long i = 0, size = points.size(); i < size; i++) {
-        auto side = Segment(points[i], points[i + 1 == size ? 0 : i + 1]);
         Point intersection;
-        if (side.intersects(segment, intersection)) {
+        if (segment.intersects(points[i], points[i + 1 == size ? 0 : i + 1], intersection)) {
             intersections++;
             intersectionSum.x += intersection.x;
             intersectionSum.y += intersection.y;

@@ -242,15 +242,31 @@ bool Segment::intersects(const Segment& other, Point& result) const {
 }
 
 bool Segment::intersects(const Point& q1, const Point& q2, Point& result) const {
+    // TODO: measure and decide if this check is still needed
     if (min(q1.x, q2.x) > max(p1.x, p2.x) + eps_intersects ||
         min(p1.x, p2.x) > max(q1.x, q2.x) + eps_intersects ||
         min(q1.y, q2.y) > max(p1.y, p2.y) + eps_intersects ||
         min(p1.y, p2.y) > max(q1.y, q2.y) + eps_intersects) return false;
-    // TODO: optimize
+
+    Vec r(p1, p2), s(q1, q2);
+    double rs = r ^ s;
+    if (abs(rs) < eps_intersects) return false;
+
+    Vec pq(p1, q1);
+    double t = pq ^ s * (1.0 / rs);
+    if (t < -eps_intersects || t > 1.0 + eps_intersects) return false;
+
+    double u = pq ^ r * (1.0 / rs);
+    if (u < -eps_intersects || u > 1.0 + eps_intersects) return false;
+
+    result = p1 + r * t;
+    return true;
+    /*
     auto l1 = Line(p1, p2);
     auto l2 = Line(q1, q2);
     return l1.intersects(l2, result) && contains(result) &&
            segmentContainsPoint(q1.x, q1.y, q2.x, q2.y, result.x, result.y);
+    */
 }
 
 Segment Segment::operator+(const Vec& direction) const {

@@ -148,9 +148,13 @@ struct Walls {
 
     Walls(const vector<vector<vector<Segment>>>& segments, const vector<vector<vector<Circle>>>& corners) :
         segments(segments), corners(corners) { }
+
+    static Walls *instance;
 };
 
-Walls computeWalls() {
+Walls *Walls::instance = nullptr;
+
+Walls *computeWalls() {
     static Game& game = Const::getGame();
     static Map& map = Map::getMap();
     static const double margin = game.getTrackTileMargin() * 1.01; // To avoid driving right against the wall
@@ -198,7 +202,9 @@ Walls computeWalls() {
         }
     }
 
-    return Walls(segments, circles);
+    Walls::instance = new Walls(segments, circles);
+
+    return Walls::instance;
 }
 
 void collideCarWithWalls(CarPosition& car) {
@@ -211,14 +217,27 @@ void collideCarWithWalls(CarPosition& car) {
     static auto allWalls = computeWalls();
 
     auto& location = car.location;
-    auto tileX = static_cast<unsigned long>(max(location.x / tileSize - 0.5, 0.0));
-    auto tileY = static_cast<unsigned long>(max(location.y / tileSize - 0.5, 0.0));
+
+    unsigned long txBegin = map.width - 1, txEnd = 0, tyBegin = map.height - 1, tyEnd = 0;
+    for (auto& point : car.rectangle.points) {
+        auto px = static_cast<unsigned long>(point.x / tileSize);
+        auto py = static_cast<unsigned long>(point.y / tileSize);
+        txBegin = min(txBegin, px);
+        txEnd = max(txEnd, px);
+        tyBegin = min(tyBegin, py);
+        tyEnd = max(tyEnd, py);
+    }
+    txBegin = max(txBegin, 0ul);
+    txEnd = min(txEnd, map.width - 1);
+    tyBegin = max(tyBegin, 0ul);
+    tyEnd = min(tyEnd, map.height - 1);
+
     CollisionInfo collision;
-    for (auto tx = tileX, txEnd = min(tileX + 1, map.width - 1); tx <= txEnd; tx++) {
-        for (auto ty = tileY, tyEnd = min(tileY + 1, map.height - 1); ty <= tyEnd; ty++) {
+    for (auto tx = txBegin; tx <= txEnd; tx++) {
+        for (auto ty = tyBegin; ty <= tyEnd; ty++) {
             auto tile = map.graph[tx][ty];
 
-            auto& wallSegments = allWalls.segments[tx][ty];
+            auto& wallSegments = allWalls->segments[tx][ty];
             for (int d = 0; d < 4; d++) {
                 if (tile & (1 << d)) continue;
 
@@ -245,7 +264,7 @@ void collideCarWithWalls(CarPosition& car) {
                 }
             }
 
-            auto& wallCorners = allWalls.corners[tx][ty];
+            auto& wallCorners = allWalls->corners[tx][ty];
             for (int d = 0; d < 4; d++) {
                 if (!(tile & (1 << d)) || !(tile & (1 << ((d + 1) & 3)))) continue;
                 auto& corner = wallCorners[d];
@@ -346,6 +365,9 @@ void CarPosition::advance(const Go& move) {
     // Location
 
     location += velocity;
+    for (auto& point : rectangle.points) {
+        point += velocity;
+    }
 
     if (!move.brake) {
         auto acceleration = enginePower * (enginePower < 0 ? buggyEngineRearAcceleration : buggyEngineForwardAcceleration);
@@ -376,8 +398,6 @@ void CarPosition::advance(const Go& move) {
     // Angle
 
     angle += angularSpeed;
-
-    rectangle = rectangleByCar(angle, location.x, location.y);
 }
 
 CarPosition::CarPosition(const Car *car) : original(car),
