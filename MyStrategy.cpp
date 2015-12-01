@@ -17,9 +17,9 @@
 using namespace model;
 using namespace std;
 
-using WheelTurnDirection::TURN_LEFT;
-using WheelTurnDirection::KEEP;
-using WheelTurnDirection::TURN_RIGHT;
+#define TURN_LEFT WheelTurnDirection::TURN_LEFT
+#define KEEP WheelTurnDirection::KEEP
+#define TURN_RIGHT WheelTurnDirection::TURN_RIGHT
 
 // #define DEBUG_PHYSICS_PREDICTION
 // #define NO_REVERSE_MODE

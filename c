@@ -1,3 +1,5 @@
+#!/bin/bash
+
 name="MyStrategy"
 
 if [ ! -f $name.cpp ]

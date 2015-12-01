@@ -49,6 +49,7 @@ double updateWheelTurn(double carWheelTurn, WheelTurnDirection direction) {
         case WheelTurnDirection::TURN_LEFT: return max(carWheelTurn - maxChange, -1.0);
         case WheelTurnDirection::KEEP: return carWheelTurn;
         case WheelTurnDirection::TURN_RIGHT: return min(carWheelTurn + maxChange, 1.0);
+        default: return carWheelTurn;
     }
 }
 

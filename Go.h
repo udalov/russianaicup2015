@@ -4,10 +4,12 @@
 #include "model/Move.h"
 
 #include <string>
+#include <vector>
 
 using model::Car;
 using model::Move;
 using std::string;
+using std::vector;
 
 enum class WheelTurnDirection {
     TURN_LEFT,

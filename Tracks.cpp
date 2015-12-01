@@ -7,16 +7,16 @@
 
 using namespace std;
 
-using WheelTurnDirection::TURN_LEFT;
-using WheelTurnDirection::KEEP;
-using WheelTurnDirection::TURN_RIGHT;
+#define TURN_LEFT WheelTurnDirection::TURN_LEFT
+#define KEEP WheelTurnDirection::KEEP
+#define TURN_RIGHT WheelTurnDirection::TURN_RIGHT
 
 bool Track::operator<(const Track& other) const {
     return score < other.score;
 }
 
 Track Track::drop(unsigned long ticks) const {
-    return Track(vector<Go>(moves.begin() + min(ticks, moves.size()), moves.end()));
+    return Track(vector<Go>(moves.begin() + min(ticks, static_cast<unsigned long>(moves.size())), moves.end()));
 }
 
 vector<Go> collectMoves(double engineFrom, double engineTo, double engineStep, bool brake) {
