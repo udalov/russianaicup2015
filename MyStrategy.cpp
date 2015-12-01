@@ -26,6 +26,7 @@ using namespace std;
 
 #ifndef ONLINE_JUDGE
 #define VISUALIZE
+#define DEBUG_OUTPUT
 #endif
 
 VisClient *vis = nullptr;
@@ -229,8 +230,10 @@ Go solve(const World& world, const vector<Tile>& path) {
             // vis->drawRect(state.me().rectangle);
         }
         vis->drawRect(state.me().rectangle);
+#ifdef DEBUG_OUTPUT
         cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score <<
             " best-move " << bestMove.toString() << " " << state.me().toString() << endl;
+#endif
         scorer.score(state, true);
     }
 
@@ -251,7 +254,7 @@ vector<Tile> computePath(const Car& self, const World& world, const Game& game) 
     for (int steps = 0; steps < 5; steps++) {
         Tile finish = Tile(waypoints[i][0], waypoints[i][1]);
         auto path = bestPath(start, finish);
-cout << "  path from " << start.toString() << " to " << finish.toString() << ":"; for (auto& p : path) cout << " " << p.toString(); cout << endl;
+        // cout << "  path from " << start.toString() << " to " << finish.toString() << ":"; for (auto& p : path) cout << " " << p.toString(); cout << endl;
         for (auto it = path.begin() + 1; it != path.end(); ++it) {
             if (it->tile != result.back()) {
                 result.push_back(it->tile);
