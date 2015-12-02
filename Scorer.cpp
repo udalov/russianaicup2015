@@ -120,6 +120,8 @@ double Scorer::score(const State& state, bool debug) const {
 
     result += (me.velocity.projection(centerLine) / centerLine.length()) * 0.02;
 
+    result += (me.medicines + me.projectiles + me.nitroCharges + me.oilCanisters + me.pureScore) * 0.4;
+
     // TODO
     // result -= angleToTheDesiredPath(cur, next, location, dir) * 0.01;
 

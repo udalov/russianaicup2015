@@ -145,10 +145,14 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
         if (abs(diffWheelTurn) > eps) cout << " wheel " << diffWheelTurn;
         auto diffHealth = actual.health - predicted.health;
         if (abs(diffHealth) > eps) cout << " health " << diffHealth;
+        auto diffProjectiles = actual.projectiles - predicted.projectiles;
+        if (abs(diffProjectiles) > eps) cout << " ammo " << diffProjectiles;
         auto diffNitroCharges = actual.nitroCharges - predicted.nitroCharges;
         if (abs(diffNitroCharges) > eps) cout << " nitros " << diffNitroCharges;
+        auto diffOilCanisters = actual.oilCanisters - predicted.oilCanisters;
+        if (abs(diffOilCanisters) > eps) cout << " oil " << diffOilCanisters;
         auto diffNitroCooldown = actual.nitroCooldown - predicted.nitroCooldown;
-        if (abs(diffNitroCooldown) > eps) cout << " nitro cooldown " << diffNitroCooldown;
+        if (abs(diffNitroCooldown) > eps) cout << " nitro-cooldown " << diffNitroCooldown;
         cout << endl;
     }
 
@@ -195,7 +199,7 @@ Go solve(const World& world, const vector<Tile>& path) {
 
     // TODO: constant
     auto tracks = vector<Track>(previousTracks.begin(), previousTracks.begin() + min(previousTracks.size(),
-            static_cast<vector<Track>::size_type>(30)
+            static_cast<vector<Track>::size_type>(50)
     ));
     collectTracks(startState.me(), tracks);
     if (tracks.empty()) return Go();
@@ -206,8 +210,9 @@ Go solve(const World& world, const vector<Tile>& path) {
         double score = 0.0;
 
         auto state = State(startState);
-        for (unsigned long i = 0, size = track.moves.size(); i < size; i++) {
-            state.apply(track.moves[i]);
+        auto& moves = track.moves();
+        for (unsigned long i = 0, size = moves.size(); i < size; i++) {
+            state.apply(moves[i]);
 
             const int firstScoreTurn = 40;
             const int stepScoreTurn = 5;
@@ -223,17 +228,19 @@ Go solve(const World& world, const vector<Tile>& path) {
     sort(tracks.rbegin(), tracks.rend());
 
     auto& bestTrack = tracks.front();
-    auto bestMove = bestTrack.moves.empty() ? Go() : bestTrack.moves.front();
+    auto bestMove = bestTrack.moves().empty() ? Go() : bestTrack.moves().front();
 
     {
+        // Debug::debug = true;
         auto state = State(startState);
-        for (auto& go : bestTrack.moves) {
+        for (auto& go : bestTrack.moves()) {
             state.apply(go);
+            // Debug::debug = false;
             // vis->drawRect(state.me().rectangle);
         }
         vis->drawRect(state.me().rectangle);
 #ifdef DEBUG_OUTPUT
-        cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score <<
+        cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score() <<
             " best-move " << bestMove.toString() << " " << state.me().toString() << endl;
 #endif
         scorer.score(state, true);

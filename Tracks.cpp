@@ -14,11 +14,11 @@ using namespace std;
 const double SURVIVAL_RATE = 0.15;
 
 bool Track::operator<(const Track& other) const {
-    return score < other.score;
+    return myScore < other.myScore;
 }
 
 Track Track::drop(unsigned long ticks) const {
-    return Track(vector<Go>(moves.begin() + min(ticks, static_cast<unsigned long>(moves.size())), moves.end()));
+    return Track(vector<Go>(myMoves.begin() + min(ticks, static_cast<unsigned long>(myMoves.size())), myMoves.end()));
 }
 
 vector<Go> collectMoves(double engineFrom, double engineTo, double engineStep, bool brake) {
@@ -101,7 +101,7 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
 
     uniform_int_distribution<int> randTrack(0, result.size() - 1);
     uniform_int_distribution<int> randBool(0, 1);
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 30; i++) {
         int x = randTrack(rng);
         int y;
         do { y = randTrack(rng); } while (y == x);
@@ -109,10 +109,10 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
         auto& t1 = result[x];
         auto& t2 = result[y];
         vector<Go> moves;
-        for (unsigned long j = 0; j < t1.moves.size(); j += 10) {
-            auto& t = (randBool(rng) & 1) ? t1 : t2;
-            for (int k = 0; k < 10 && j + k < t.moves.size(); k++) {
-                moves.push_back(t.moves[j + k]);
+        for (unsigned long j = 0, size1 = t1.moves().size(), size2 = t2.moves().size(); j < size1 && j < size2; j += 10) {
+            auto& t = (randBool(rng) & 1) ? t1.moves() : t2.moves();
+            for (int k = 0; k < 10 && j + k < t.size(); k++) {
+                moves.push_back(t[j + k]);
             }
         }
         result.emplace_back(moves);

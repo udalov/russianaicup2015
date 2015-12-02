@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math2d.h"
+#include "model/Bonus.h"
 #include "model/Car.h"
 #include "model/OilSlick.h"
 #include "model/Projectile.h"
@@ -10,6 +11,7 @@
 
 #include <vector>
 
+using model::Bonus;
 using model::Car;
 using model::OilSlick;
 using model::Projectile;
@@ -26,9 +28,14 @@ struct CarPosition {
     double enginePower;
     double wheelTurn;
     double health;
+    int projectiles;
     int nitroCharges;
+    int oilCanisters;
     int nitroCooldown;
     Rect rectangle;
+
+    int medicines;
+    int pureScore;
 
     CarPosition(const Car *car);
 
@@ -70,11 +77,22 @@ struct WasherPosition {
     void apply();
 };
 
+struct BonusPosition {
+    const Bonus *original;
+    Point location;
+    Rect outerRectangle;
+    Rect innerRectangle;
+    bool isAlive;
+
+    BonusPosition(const Bonus *bonus);
+};
+
 struct State {
     const World *original;
     vector<CarPosition> cars;
     vector<OilSlickPosition> oilSlicks;
     vector<WasherPosition> washers;
+    vector<BonusPosition> bonuses;
 
     State(const World *world);
 

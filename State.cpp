@@ -14,6 +14,10 @@ using namespace std;
 
 const double EPSILON = 1e-7;
 
+// We consider that we pick up a bonus if the rectangle this much smaller than the bonus intersects our rectangle.
+// The enemy, on the other hand, will pick up a bonus if the rectangle this much _larger_ intersects his rectangle.
+const double BONUS_SIZE_RATIO = 1.25;
+
 State::State(const World *world) : original(world) {
     auto& cars = world->getCars();
     this->cars.reserve(cars.size());
@@ -25,15 +29,18 @@ State::State(const World *world) : original(world) {
         }
     }
 
-    auto& oilSlicks = world->getOilSlicks();
-    this->oilSlicks.reserve(oilSlicks.size());
-    for (unsigned long i = 0, size = oilSlicks.size(); i < size; i++) {
-        this->oilSlicks.emplace_back(&oilSlicks[i]);
+    for (auto& oilSlick : world->getOilSlicks()) {
+        oilSlicks.emplace_back(&oilSlick);
     }
 
-    auto& washers = world->getProjectiles();
-    for (unsigned long i = 0, size = washers.size(); i < size; i++) {
-        this->washers.emplace_back(&washers[i]);
+    for (auto& projectile : world->getProjectiles()) {
+        if (projectile.getType() == model::WASHER) {
+            washers.emplace_back(&projectile);
+        }
+    }
+
+    for (auto& bonus : world->getBonuses()) {
+        bonuses.emplace_back(&bonus);
     }
 }
 
@@ -314,10 +321,57 @@ void collideCarWithWalls(CarPosition& car) {
     }
 }
 
+void applyBonus(CarPosition& car, BonusPosition& bonus) {
+    bonus.isAlive = false;
+    switch (bonus.original->getType()) {
+        case model::REPAIR_KIT: car.medicines++; car.health = 1.0; break;
+        case model::AMMO_CRATE: car.projectiles++; break;
+        case model::NITRO_BOOST: car.nitroCharges++; break;
+        case model::OIL_CANISTER: car.oilCanisters++; break;
+        case model::PURE_SCORE: car.pureScore++; break;
+        default: break;
+    }
+}
+
+void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses) {
+    static const double maximumRelevantDistance = myHypot(
+            (Const::getGame().getCarHeight() + Const::getGame().getBonusSize()) / 2,
+            (Const::getGame().getCarWidth() + Const::getGame().getBonusSize()) / 2
+    ) + EPSILON;
+
+    auto& location = car.location;
+    auto& points = car.rectangle.points();
+    
+    Point unused;
+    for (auto& bonus : bonuses) {
+        // if (Debug::debug) cout << "  bonus at " << bonus.location.toString() << " " << bonus.isAlive << " distance " << location.distanceTo(bonus.location) << endl;
+        if (!bonus.isAlive) continue;
+        if (location.distanceTo(bonus.location) > maximumRelevantDistance) continue;
+
+        // TODO: optimize
+        bool signedDistancesNegative = true;
+        bool shouldApply = false;
+        for (unsigned long i = 0, size = points.size(); i < size; i++) {
+            auto side = Segment(points[i], points[i + 1 == size ? 0 : i + 1]);
+            if (side.intersects(bonus.innerRectangle, unused)) {
+                shouldApply = true;
+                break;
+            }
+            signedDistancesNegative &= Line(side.p1, side.p2).signedDistanceFrom(bonus.location) < 0;
+        }
+
+        if (shouldApply || signedDistancesNegative) {
+            applyBonus(car, bonus);
+        }
+    }
+
+}
+
 void State::apply(const Go& move) {
     // TODO: simulate all cars
     cars.front().advance(move);
     collideCarWithWalls(cars.front());
+    collectBonuses(cars.front(), bonuses);
 
     for (auto& oilSlick : oilSlicks) {
         oilSlick.apply();
@@ -345,13 +399,10 @@ void WasherPosition::apply() {
     // TODO
 }
 
-Rect rectangleByCar(double angle, double x, double y) {
-    static const double carWidth = Const::getGame().getCarWidth();
-    static const double carHeight = Const::getGame().getCarHeight();
-
+Rect rectangleByUnit(double angle, double x, double y, double width, double height) {
     Vec dir = Vec(angle);
-    Vec forward = dir * (carWidth / 2);
-    Vec sideways = Vec(-dir.y, dir.x) * (carHeight / 2);
+    Vec forward = dir * (width / 2);
+    Vec sideways = Vec(-dir.y, dir.x) * (height / 2);
     Point lpf = Point(x + forward.x, y + forward.y);
     Point lmf = Point(x - forward.x, y - forward.y);
     return Rect({ lpf - sideways, lpf + sideways, lmf + sideways, lmf - sideways });
@@ -443,9 +494,13 @@ CarPosition::CarPosition(const Car *car) : original(car),
         enginePower(car->getEnginePower()),
         wheelTurn(car->getWheelTurn()),
         health(car->getDurability()),
+        projectiles(car->getProjectileCount()),
         nitroCharges(car->getNitroChargeCount()),
+        oilCanisters(car->getOilCanisterCount()),
         nitroCooldown(car->getRemainingNitroCooldownTicks()),
-        rectangle(rectangleByCar(car->getAngle(), car->getX(), car->getY())) { }
+        rectangle(rectangleByUnit(car->getAngle(), car->getX(), car->getY(), car->getWidth(), car->getHeight())),
+        medicines(0),
+        pureScore(0) { }
 
 Point CarPosition::bumperCenter() const {
     static const double carWidth = Const::getGame().getCarWidth();
@@ -486,7 +541,18 @@ string CarPosition::toString() const {
             " engine " << enginePower <<
             " wheel " << wheelTurn <<
             " health " << health <<
+            " ammo " << projectiles <<
             " nitros " << nitroCharges <<
+            " oil " << oilCanisters <<
+            " score " << pureScore <<
             " nitro-cooldown " << nitroCooldown;
     return ss.str();
 }
+
+BonusPosition::BonusPosition(const Bonus *bonus) : original(bonus),
+        location(Point(bonus->getX(), bonus->getY())),
+        outerRectangle(rectangleByUnit(bonus->getAngle(), bonus->getX(), bonus->getY(),
+                    bonus->getWidth() * BONUS_SIZE_RATIO, bonus->getHeight() * BONUS_SIZE_RATIO)),
+        innerRectangle(rectangleByUnit(bonus->getAngle(), bonus->getX(), bonus->getY(),
+                    bonus->getWidth() / BONUS_SIZE_RATIO, bonus->getHeight() / BONUS_SIZE_RATIO)),
+        isAlive(true) { }
