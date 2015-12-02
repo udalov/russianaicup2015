@@ -307,6 +307,9 @@ void collideCarWithWalls(CarPosition& car) {
     unsigned long txBegin, txEnd, tyBegin, tyEnd;
     determineTileBounds(car.rectangle, txBegin, txEnd, tyBegin, tyEnd);
 
+    // TODO: this shouldn't happen and is only here to prevent segfaults
+    if (txBegin > map.width || txEnd > map.width || tyBegin > map.height || tyEnd > map.height) return;
+
     for (auto tx = txBegin; tx <= txEnd; tx++) {
         for (auto ty = tyBegin; ty <= tyEnd; ty++) {
             int tile = map.get(tx, ty);
