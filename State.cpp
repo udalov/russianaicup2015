@@ -183,8 +183,11 @@ Walls *computeWalls() {
     static Game& game = Const::getGame();
     static const double mapWidth = Map::getMap().width;
     static const double mapHeight = Map::getMap().height;
-    static const double margin = game.getTrackTileMargin() * 1.05; // To avoid driving right against the wall
     static const double tileSize = game.getTrackTileSize();
+
+    // To avoid driving right against the walls and corners
+    static const double segmentMargin = game.getTrackTileMargin() * 1.05;
+    static const double circleRadius = game.getTrackTileMargin() * 1.15;
 
     auto segments = vector<Segment>(mapWidth * mapHeight * 4, Segment { Point(), Point() });
     auto circles = vector<Circle>(mapWidth * mapHeight * 4, Circle { Point(), double() });
@@ -196,12 +199,12 @@ Walls *computeWalls() {
         for (unsigned long ty = 0; ty < mapHeight; ty++) {
             for (int d = 0; d < 4; d++) {
                 auto p1 = Point(
-                        (tx + max(dx[d] + dy[d], 0)) * tileSize - dx[d] * margin,
-                        (ty + max(dy[d] - dx[d], 0)) * tileSize - dy[d] * margin
+                        (tx + max(dx[d] + dy[d], 0)) * tileSize - dx[d] * segmentMargin,
+                        (ty + max(dy[d] - dx[d], 0)) * tileSize - dy[d] * segmentMargin
                 );
                 auto p2 = Point(
-                        (tx + max(dx[d] - dy[d], 0)) * tileSize - dx[d] * margin,
-                        (ty + max(dx[d] + dy[d], 0)) * tileSize - dy[d] * margin
+                        (tx + max(dx[d] - dy[d], 0)) * tileSize - dx[d] * segmentMargin,
+                        (ty + max(dx[d] + dy[d], 0)) * tileSize - dy[d] * segmentMargin
                 );
                 auto segment = Segment(p1, p2);
 
@@ -215,7 +218,7 @@ Walls *computeWalls() {
                         (tx + (dx[d] - dy[d] + 1.) / 2) * tileSize,
                         (ty + (dx[d] + dy[d] + 1.) / 2) * tileSize
                 );
-                circles[((tx * mapHeight) + ty) * 4 + d] = Circle(p, margin);
+                circles[((tx * mapHeight) + ty) * 4 + d] = Circle(p, circleRadius);
             }
         }
     }
