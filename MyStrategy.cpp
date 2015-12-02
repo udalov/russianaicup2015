@@ -22,7 +22,6 @@ using namespace std;
 #define TURN_RIGHT WheelTurnDirection::TURN_RIGHT
 
 // #define DEBUG_PHYSICS_PREDICTION
-// #define NO_REVERSE_MODE
 
 #ifndef ONLINE_JUDGE
 #define VISUALIZE
@@ -286,32 +285,72 @@ vector<Tile> computePath(const Car& self, const World& world, const Game& game) 
     return result;
 }
 
-bool reverseMode(const CarPosition& me, const World& world) {
-#ifdef NO_REVERSE_MODE
+bool safeModeForward(const World& world, Go& result) {
+    // Try going forward for the next epsilon ticks and see if it helps
+    auto startState = State(&world);
+    vector<Track> tracks;
+    for (auto wheel : { TURN_LEFT, KEEP, TURN_RIGHT }) {
+        tracks.emplace_back(vector<Go>(25, Go(1.0, wheel)));
+    }
+    for (auto& track : tracks) {
+        auto state = State(startState);
+        for (auto& move : track.moves()) {
+            state.apply(move);
+        }
+        if (state.me().velocity.length() > 1.0) {
+            result = track.moves().front();
+            return true;
+        }
+    }
     return false;
-#else
+}
+
+bool safeMode(const CarPosition& me, const World& world, Move& move) {
     static int lastNonZeroSpeedTick = Const::getGame().getInitialFreezeDurationTicks();
-    static int reverseUntilTick = -1;
+    static int safeUntilTick = -1;
     static int waitUntilTick = -1;
 
     auto tick = world.getTick();
     auto nonZeroSpeed = abs(me.velocity.length()) > 1.0;
 
-    // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick << " reverse-until " << reverseUntilTick << " wait-until " << waitUntilTick << " non-zero " << nonZeroSpeed << endl;
+    // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick << " safe-until " << safeUntilTick << " wait-until " << waitUntilTick << " non-zero " << nonZeroSpeed << endl;
 
-    if (tick <= reverseUntilTick) return true;
+    if (tick <= safeUntilTick) {
+        /*
+        Go forward;
+        if (safeModeForward(world, forward)) {
+            forward.applyTo(*me.original, move);
+            return true;
+        }
+        */
+        move.setEnginePower(-1.0);
+        move.setWheelTurn(0.0);
+        if (me.enginePower > 0.0) {
+            move.setBrake(true);
+        }
+        return true;
+    }
 
-    if (nonZeroSpeed || tick <= reverseUntilTick || tick <= waitUntilTick) {
+    if (nonZeroSpeed || tick <= safeUntilTick || tick <= waitUntilTick) {
         lastNonZeroSpeedTick = tick;
     }
-
-    if (tick > waitUntilTick && tick - lastNonZeroSpeedTick >= 20) {
-        reverseUntilTick = tick + 120;
-        waitUntilTick = tick + 180;
+    
+    if (tick <= waitUntilTick || tick - lastNonZeroSpeedTick < 20) {
+        return false;
     }
 
+    safeUntilTick = tick + 120;
+    waitUntilTick = tick + 180;
+
+    /*
+    Go forward;
+    if (safeModeForward(world, forward)) {
+        forward.applyTo(*me.original, move);
+        return true;
+    }
+    */
+
     return false;
-#endif
 }
 
 void printMove(const Move& move) {
@@ -348,12 +387,7 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         return;
     }
 
-    if (reverseMode(CarPosition(&self), world)) {
-        move.setEnginePower(-1.0);
-        move.setWheelTurn(0.0);
-        if (self.getEnginePower() > 0.0) {
-            move.setBrake(true);
-        }
+    if (safeMode(CarPosition(&self), world, move)) {
         return;
     }
 
