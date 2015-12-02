@@ -11,6 +11,8 @@ using namespace std;
 #define KEEP WheelTurnDirection::KEEP
 #define TURN_RIGHT WheelTurnDirection::TURN_RIGHT
 
+const double SURVIVAL_RATE = 0.15;
+
 bool Track::operator<(const Track& other) const {
     return score < other.score;
 }
@@ -57,6 +59,8 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
     auto secondMovesBase = collectMoves(1.0, 1.0, 1.0, true);
     auto thirdMovesBase = collectMoves(1.0, 1.0, 1.0, true);
 
+    uniform_real_distribution<> survival(0, 1);
+
     vector<Go> moves;
     for (auto& firstMove : firstMoves) {
         for (int i = 0; i < firstDuration; i++) {
@@ -79,7 +83,11 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
                 for (int k = 0; k < thirdDuration; k++) {
                     moves.push_back(thirdMove);
                 }
-                result.emplace_back(moves);
+
+                if (survival(rng) < SURVIVAL_RATE) {
+                    result.emplace_back(moves);
+                }
+                
                 moves.erase(moves.end() - thirdDuration, moves.end());
             }
 

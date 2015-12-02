@@ -1,7 +1,5 @@
 major:
 - use Dijkstra with bonuses in path finder
-normal:
-- do not take first path of empty track
 
 bonuses
 nitro

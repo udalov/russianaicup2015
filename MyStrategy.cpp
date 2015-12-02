@@ -198,6 +198,8 @@ Go solve(const World& world, const vector<Tile>& path) {
             static_cast<vector<Track>::size_type>(30)
     ));
     collectTracks(startState.me(), tracks);
+    if (tracks.empty()) return Go();
+
     auto scorer = Scorer(startState, path, vis);
 
     for (auto& track : tracks) {
@@ -221,7 +223,7 @@ Go solve(const World& world, const vector<Tile>& path) {
     sort(tracks.rbegin(), tracks.rend());
 
     auto& bestTrack = tracks.front();
-    auto bestMove = bestTrack.moves.front();
+    auto bestMove = bestTrack.moves.empty() ? Go() : bestTrack.moves.front();
 
     {
         auto state = State(startState);
