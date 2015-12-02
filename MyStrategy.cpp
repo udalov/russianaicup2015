@@ -29,6 +29,8 @@ using namespace std;
 #define DEBUG_OUTPUT
 #endif
 
+const int NITRO_CHECK_PERIOD = 10;
+
 VisClient *vis = nullptr;
 
 void initialize(const Game& game) {
@@ -204,6 +206,15 @@ Go solve(const World& world, const vector<Tile>& path) {
     collectTracks(startState.me(), tracks);
     if (tracks.empty()) return Go();
 
+    if (!(world.getTick() % NITRO_CHECK_PERIOD) && startState.me().nitroCharges > 0 && startState.me().nitroCooldown == 0) {
+        for (unsigned long i = 0, size = tracks.size(); i < size; i++) {
+            auto copy = Track(tracks[i]);
+            if (copy.moves().empty()) continue;
+            copy.moves().front().useNitro = true;
+            tracks.push_back(copy);
+        }
+    }
+
     auto scorer = Scorer(startState, path, vis);
 
     for (auto& track : tracks) {
@@ -248,7 +259,7 @@ Go solve(const World& world, const vector<Tile>& path) {
 
     previousTracks.resize(tracks.size());
     transform(tracks.begin(), tracks.end(), previousTracks.begin(), [](const Track& track) {
-        return track.drop(1);
+        return track.rotate();
     });
 
     return bestMove;

@@ -14,6 +14,7 @@ public:
 
     double score() const { return myScore; }
     const vector<Go>& moves() const { return myMoves; }
+    vector<Go>& moves() { return myMoves; }
 
     void setScore(double score) {
         this->myScore = score;
@@ -21,7 +22,7 @@ public:
 
     bool operator<(const Track& other) const;
 
-    Track drop(unsigned long ticks) const;
+    Track rotate() const;
 
 private:
     vector<Go> myMoves;

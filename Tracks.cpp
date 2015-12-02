@@ -17,8 +17,11 @@ bool Track::operator<(const Track& other) const {
     return myScore < other.myScore;
 }
 
-Track Track::drop(unsigned long ticks) const {
-    return Track(vector<Go>(myMoves.begin() + min(ticks, static_cast<unsigned long>(myMoves.size())), myMoves.end()));
+Track Track::rotate() const {
+    if (myMoves.empty()) return *this;
+    auto moves = vector<Go>(myMoves.begin() + 1, myMoves.end());
+    moves.push_back(*myMoves.begin());
+    return Track(moves);
 }
 
 vector<Go> collectMoves(double engineFrom, double engineTo, double engineStep, bool brake) {
