@@ -55,7 +55,7 @@ double Scorer::score(const State& state, bool debug) const {
     // TODO: store waypoint index in CarPosition and find shortest path here
     unsigned long startSeg = find(path.begin(), path.end(), startState.me().tile()) - path.begin();
     unsigned long nextSeg = find(path.begin() + startSeg, path.end(), me.tile()) - path.begin();
-    if (nextSeg == path.size() || nextSeg - startSeg >= 7) return -1e15; // TODO
+    if (nextSeg == path.size() || nextSeg - startSeg >= 5) return -1e15; // TODO (!)
     nextSeg++;
 
     auto& next = pathSegment[nextSeg - 1];
@@ -102,8 +102,8 @@ double Scorer::score(const State& state, bool debug) const {
     }
     */
 
-    auto dir = me.direction();
     /*
+    auto dir = me.direction();
     if (!isFacingTowards(me, next)) {
         auto minAngle = min(
                 abs(dir.angleTo(Vec(location, next.p1))),
