@@ -275,28 +275,19 @@ void collideCarWithCornerWall(CarPosition& car, const Circle& corner) {
 void determineTileBounds(
         const Rect& rectangle, unsigned long& txBegin, unsigned long& txEnd, unsigned long& tyBegin, unsigned long& tyEnd
 ) {
-    static const unsigned long mapWidth = Map::getMap().width;
-    static const unsigned long mapHeight = Map::getMap().height;
     static const double tileSize = Const::getGame().getTrackTileSize();
 
-    txBegin = mapWidth - 1;
-    txEnd = 0ul;
-    tyBegin = mapHeight - 1;
-    tyEnd = 0ul;
+    auto& p = rectangle.points();
 
-    for (auto& point : rectangle.points()) {
-        auto px = static_cast<unsigned long>(point.x / tileSize);
-        auto py = static_cast<unsigned long>(point.y / tileSize);
-        txBegin = min(txBegin, px);
-        txEnd = max(txEnd, px);
-        tyBegin = min(tyBegin, py);
-        tyEnd = max(tyEnd, py);
-    }
+    auto minX = min(min((&p[0])->x, (&p[1])->x), min((&p[2])->x, (&p[3])->x));
+    auto maxX = max(max((&p[0])->x, (&p[1])->x), max((&p[2])->x, (&p[3])->x));
+    auto minY = min(min((&p[0])->y, (&p[1])->y), min((&p[2])->y, (&p[3])->y));
+    auto maxY = max(max((&p[0])->y, (&p[1])->y), max((&p[2])->y, (&p[3])->y));
 
-    txBegin = max(txBegin, 0ul);
-    txEnd = min(txEnd, mapWidth - 1);
-    tyBegin = max(tyBegin, 0ul);
-    tyEnd = min(tyEnd, mapHeight - 1);
+    txBegin = static_cast<unsigned long>(minX / tileSize);
+    txEnd = static_cast<unsigned long>(maxX / tileSize);
+    tyBegin = static_cast<unsigned long>(minY / tileSize);
+    tyEnd = static_cast<unsigned long>(maxY / tileSize);
 }
 
 void collideCarWithWalls(CarPosition& car) {

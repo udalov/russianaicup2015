@@ -54,18 +54,11 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
     const int thirdDuration = 50;
 
     auto firstMoves = collectMoves(1.0, 1.0, 1.0, true);
-    if (me.enginePower != 1.0) {
-        for (auto& wheel : { TURN_LEFT, KEEP, TURN_RIGHT }) {
-            for (auto brake : { false, true }) {
-                firstMoves.emplace_back(me.enginePower, wheel, brake);
-            }
-        }
-    }
     auto secondMovesBase = collectMoves(1.0, 1.0, 1.0, true);
     auto thirdMovesBase = collectMoves(1.0, 1.0, 1.0, true);
 
+    vector<Go> moves;
     for (auto& firstMove : firstMoves) {
-        vector<Go> moves;
         for (int i = 0; i < firstDuration; i++) {
             moves.push_back(firstMove);
         }
@@ -78,6 +71,11 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
 
             auto thirdMoves = addIfNeeded(addIfNeeded(thirdMovesBase, firstMove), secondMove);
             for (auto& thirdMove : thirdMoves) {
+                if (firstMove.brake && secondMove.brake && thirdMove.brake) {
+                    // It seems it's pointless to be braking for that many turns
+                    continue;
+                }
+
                 for (int k = 0; k < thirdDuration; k++) {
                     moves.push_back(thirdMove);
                 }
@@ -95,7 +93,7 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
 
     uniform_int_distribution<int> randTrack(0, result.size() - 1);
     uniform_int_distribution<int> randBool(0, 1);
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 50; i++) {
         int x = randTrack(rng);
         int y;
         do { y = randTrack(rng); } while (y == x);
