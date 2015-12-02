@@ -7,10 +7,10 @@
 
 using namespace std;
 
-string javaHome = "/Library/Java/JavaVirtualMachines/jdk1.8.0_60.jdk/Contents/Home";
+string javaHome = "/Applications/IDEA.app/Contents/jre/jdk/Contents/Home";
 
 void runLocalRunner(bool vis) {
-    string command = "$(/usr/libexec/java_home -v 1.8)/bin/java -jar lib/local-runner.jar ";
+    string command = javaHome + "/bin/java -jar lib/local-runner.jar ";
     if (vis) command += "lib/local-runner.properties";
     else command += "lib/local-runner-console.properties";
     system(command.c_str());
