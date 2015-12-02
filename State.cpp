@@ -164,7 +164,7 @@ struct Walls {
     int height;
 
     Walls(const vector<Segment>& segments, const vector<Circle>& corners) :
-        segments(segments), corners(corners), height(Map::getMap().width) { }
+        segments(segments), corners(corners), height(Map::getMap().height) { }
 
     const Segment& segment(unsigned long tx, unsigned long ty, int d) {
         return segments[((tx * height) + ty) * 4 + d];
@@ -183,7 +183,7 @@ Walls *computeWalls() {
     static Game& game = Const::getGame();
     static const double mapWidth = Map::getMap().width;
     static const double mapHeight = Map::getMap().height;
-    static const double margin = game.getTrackTileMargin() * 1.01; // To avoid driving right against the wall
+    static const double margin = game.getTrackTileMargin() * 1.05; // To avoid driving right against the wall
     static const double tileSize = game.getTrackTileSize();
 
     auto segments = vector<Segment>(mapWidth * mapHeight * 4, Segment { Point(), Point() });
@@ -206,8 +206,8 @@ Walls *computeWalls() {
                 auto segment = Segment(p1, p2);
 
                 // Reorder p1 and p2 so that if p1.x == p2.x then p1.y < p2.y, and if p1.y == p2.y then p1.x < p2.x
-                if (!(d & 1) && segment.p1.y > segment.p2.y) segment = Segment(segment.p2, segment.p1);
-                if ((d & 1) && segment.p1.x > segment.p2.x) segment = Segment(segment.p2, segment.p1);
+                if (!(d & 1) && segment.p1.y > segment.p2.y) swap(segment.p1, segment.p2);
+                if ((d & 1) && segment.p1.x > segment.p2.x) swap(segment.p1, segment.p2);
 
                 segments[((tx * mapHeight) + ty) * 4 + d] = segment;
 
@@ -242,10 +242,10 @@ void collideCarWithSegmentWall(CarPosition& car, const Segment& wall, int d) {
     CollisionInfo collision;
     if (collideRectAndSegment(car.rectangle, wall, collision)) {
         /*
-        if (D) {
+        if (Debug::debug) {
             cout << "segment collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
             cout << "  " << car.toString() << endl;
-            cout << "  (with segment " << wall.p1.toString() << " -> " << wall.p2.toString() << ")" << endl;
+            cout << "  (with segment " << wall.toString() << ")" << endl;
         }
         */
         resolveWallCollision(collision, car);
@@ -254,18 +254,17 @@ void collideCarWithSegmentWall(CarPosition& car, const Segment& wall, int d) {
 
 void collideCarWithCornerWall(CarPosition& car, const Circle& corner) {
     static const double carRadius = myHypot(Const::getGame().getCarHeight() / 2, Const::getGame().getCarWidth() / 2) + EPSILON;
-    static const double margin = Const::getGame().getTrackTileMargin();
 
-    if (car.location.distanceTo(corner.center) > margin + carRadius) return;
-    if (car.rectangle.distanceFrom(corner.center) > margin + EPSILON) return;
+    if (car.location.distanceTo(corner.center) > corner.radius + carRadius) return;
+    if (car.rectangle.distanceFrom(corner.center) > corner.radius + EPSILON) return;
 
     CollisionInfo collision;
     if (collideCircleAndRect(car.rectangle, corner, collision)) {
         /*
-        if (D) {
+        if (Debug::debug) {
             cout << "corner collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
             cout << "  " << car.toString() << endl;
-            cout << "  (with corner at " << p.toString() << ")" << endl;
+            cout << "  (with corner at " << corner.toString() << ")" << endl;
         }
         */
         resolveWallCollision(collision, car);
@@ -306,9 +305,7 @@ void collideCarWithWalls(CarPosition& car) {
                 if (!(tile & (1 << d))) {
                     collideCarWithSegmentWall(car, allWalls->segment(tx, ty, d), d);
                 }
-                if ((tile & (1 << d)) && (tile & (1 << ((d + 1) & 3)))) {
-                    collideCarWithCornerWall(car, allWalls->corner(tx, ty, d));
-                }
+                collideCarWithCornerWall(car, allWalls->corner(tx, ty, d));
             }
         }
     }

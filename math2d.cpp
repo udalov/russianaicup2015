@@ -185,6 +185,13 @@ string Segment::toString() const {
     return string("<") + p1.toString() + " -> " + p2.toString() + ">";
 }
 
+string Circle::toString() const {
+    ostringstream ss;
+    ss.precision(8);
+    ss << fixed << "(" << center.x << ", " << center.y << ", " << radius << ")";
+    return ss.str();
+}
+
 Vec Vec::rotate(double alpha) const {
     auto cos = myCos(alpha);
     auto sin = mySin(alpha);

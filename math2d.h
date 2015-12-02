@@ -178,6 +178,8 @@ struct Circle {
 
     Circle(const Point& center, double radius) : center(center), radius(radius) { }
     Circle(const Circle& other) : center(other.center), radius(other.radius) { }
+
+    string toString() const;
 };
 
 double myHypot(double x, double y);
