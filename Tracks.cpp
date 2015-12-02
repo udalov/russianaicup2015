@@ -24,27 +24,6 @@ Track Track::rotate() const {
     return Track(moves);
 }
 
-vector<Go> collectMoves(double engineFrom, double engineTo, double engineStep, bool brake) {
-    vector<Go> result;
-    for (double e = engineFrom; e <= engineTo; e += engineStep) {
-        for (auto& w : { TURN_LEFT, KEEP, TURN_RIGHT }) {
-            for (int b = 0; b <= brake; b++) {
-                result.emplace_back(e, w, (bool) b);
-            }
-        }
-    }
-    return result;
-}
-
-template <typename T> vector<T> addIfNeeded(const vector<T>& v, const T& element) {
-    if (find(v.begin(), v.end(), element) == v.end()) {
-        auto result = v;
-        result.push_back(element);
-        return result;
-    }
-    return v;
-}
-
 default_random_engine createRandomEngine() {
     default_random_engine rng;
     rng.seed(42);
@@ -58,26 +37,27 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
     const int secondDuration = 25;
     const int thirdDuration = 50;
 
-    auto firstMoves = collectMoves(1.0, 1.0, 1.0, true);
-    auto secondMovesBase = collectMoves(1.0, 1.0, 1.0, true);
-    auto thirdMovesBase = collectMoves(1.0, 1.0, 1.0, true);
+    vector<Go> forwardMoves;
+    for (auto& wheelTurn : { TURN_LEFT, KEEP, TURN_RIGHT }) {
+        for (bool brake : { false, true }) {
+            forwardMoves.emplace_back(1.0, wheelTurn, brake);
+        }
+    }
 
     uniform_real_distribution<> survival(0, 1);
 
     vector<Go> moves;
-    for (auto& firstMove : firstMoves) {
+    for (auto& firstMove : forwardMoves) {
         for (int i = 0; i < firstDuration; i++) {
             moves.push_back(firstMove);
         }
 
-        auto secondMoves = addIfNeeded(secondMovesBase, firstMove);
-        for (auto& secondMove : secondMoves) {
+        for (auto& secondMove : forwardMoves) {
             for (int j = 0; j < secondDuration; j++) {
                 moves.push_back(secondMove);
             }
 
-            auto thirdMoves = addIfNeeded(addIfNeeded(thirdMovesBase, firstMove), secondMove);
-            for (auto& thirdMove : thirdMoves) {
+            for (auto& thirdMove : forwardMoves) {
                 if (firstMove.brake && secondMove.brake && thirdMove.brake) {
                     // It seems it's pointless to be braking for that many turns
                     continue;
