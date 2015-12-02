@@ -7,7 +7,11 @@
 
 using namespace std;
 
+#ifdef _LINUX
+string javaHome = "/usr";
+#else
 string javaHome = "/Applications/IDEA.app/Contents/jre/jdk/Contents/Home";
+#endif
 
 void runLocalRunner(bool vis) {
     string command = javaHome + "/bin/java -jar lib/local-runner.jar ";

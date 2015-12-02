@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 2.6)
 project(russianaicup)
 
-SET(CMAKE_CXX_FLAGS "-D__APPLE__ -std=c++11 -O2 -g -Wall -Wno-unknown-pragmas -fno-optimize-sibling-calls -fno-strict-aliasing")
+if(CMAKE_SYSTEM MATCHES "Linux.*")
+    set(CMAKE_CXX_FLAGS "-D_LINUX -std=c++11 -O2 -g -pthread -lpthread -Wall -Wno-unknown-pragmas -fno-optimize-sibling-calls -fno-strict-aliasing")
+else()
+    set(CMAKE_CXX_FLAGS "-D__APLE__ -std=c++11 -O2 -g -pthread -lpthread -Wall -Wno-unknown-pragmas -fno-optimize-sibling-calls -fno-strict-aliasing")
+endif()
 
 add_library(russianaicup
         csimplesocket/HTTPActiveSocket.cpp

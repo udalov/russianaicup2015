@@ -1,5 +1,10 @@
-SET(CMAKE_CXX_FLAGS "-D__APPLE__ -std=c++11 -O2 -Wall -Wno-unknown-pragmas")
-# SET(GTEST_COLOR "auto")
+if(CMAKE_SYSTEM MATCHES "Linux.*")
+    set(CMAKE_CXX_FLAGS "-D_LINUX -std=c++11 -O2 -Wall -Wno-unknown-pragmas")
+else()
+    set(CMAKE_CXX_FLAGS "-D__APPLE__ -std=c++11 -O2 -Wall -Wno-unknown-pragmas")
+endif()
+
+# set(GTEST_COLOR "auto")
 
 include_directories(gtest-1.7.0/include gtest-1.7.0)
 include_directories(..)
