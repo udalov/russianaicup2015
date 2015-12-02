@@ -118,7 +118,7 @@ double Scorer::score(const State& state, bool debug) const {
     result -= nextTurnAngle * 1400.0;
     */
 
-    result += (me.velocity.projection(centerLine) / centerLine.length()) * 0.03;
+    result += (me.velocity.projection(centerLine) / centerLine.length()) * 0.02;
 
     // TODO
     // result -= angleToTheDesiredPath(cur, next, location, dir) * 0.01;
