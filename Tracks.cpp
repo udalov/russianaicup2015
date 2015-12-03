@@ -92,9 +92,10 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
         auto& t1 = result[x];
         auto& t2 = result[y];
         vector<Go> moves;
-        for (unsigned long j = 0, size1 = t1.moves().size(), size2 = t2.moves().size(); j < size1 && j < size2; j += 10) {
+        const unsigned long step = 10;
+        for (unsigned long j = 0, size1 = t1.moves().size(), size2 = t2.moves().size(); j < size1 && j < size2; j += step) {
             auto& t = (randBool(rng) & 1) ? t1.moves() : t2.moves();
-            for (int k = 0; k < 10 && j + k < t.size(); k++) {
+            for (unsigned long k = 0; k < step && j + k < t.size(); k++) {
                 moves.push_back(t[j + k]);
             }
         }

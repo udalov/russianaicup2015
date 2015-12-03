@@ -47,7 +47,29 @@ double angleToTheDesiredPath(const Segment& cur, const Segment& next, const Poin
     return abs(dir.angleTo(v));
 }
 
-double Scorer::score(const State& state, bool debug) const {
+double Scorer::scoreTrack(const Track& track) const {
+    double result = 0.0;
+
+    auto state = State(startState);
+    auto& moves = track.moves();
+    for (unsigned long i = 0, size = moves.size(); i < size; i++) {
+        state.apply(moves[i]);
+
+        // TODO: constants
+        const int firstScoreTurn = 40;
+        const int stepScoreTurn = 5;
+        if (i >= firstScoreTurn && !(i % stepScoreTurn)) {
+            double stateScore = scoreState(state);
+            double damp = ((i - firstScoreTurn + stepScoreTurn) / stepScoreTurn);
+            if (damp > 5) damp = 5;
+            result += stateScore / damp;
+        }
+    }
+
+    return result;
+}
+
+double Scorer::scoreState(const State& state, bool debug) const {
     auto& me = state.me();
 
     auto location = me.bumperCenter();

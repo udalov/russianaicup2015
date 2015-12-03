@@ -2,14 +2,15 @@
 
 #include "Path.h"
 #include "State.h"
+#include "Tracks.h"
 #include "VisClient.h"
 #include <vector>
 
 using std::vector;
 
-struct Scorer {
-    static constexpr double NO_SCORE = -1e42;
+class Track;
 
+struct Scorer {
     const State& startState;
     const vector<Tile>& path;
 
@@ -17,5 +18,6 @@ struct Scorer {
 
     Scorer(const State& startState, const vector<Tile>& path, VisClient *vis);
 
-    double score(const State& state, bool debug = false) const;
+    double scoreTrack(const Track& track) const;
+    double scoreState(const State& state, bool debug = false) const;
 };

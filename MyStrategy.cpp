@@ -217,22 +217,7 @@ Go solve(const World& world, const vector<Tile>& path) {
     auto scorer = Scorer(startState, path, vis);
 
     for (auto& track : tracks) {
-        double score = 0.0;
-
-        auto state = State(startState);
-        auto& moves = track.moves();
-        for (unsigned long i = 0, size = moves.size(); i < size; i++) {
-            state.apply(moves[i]);
-
-            const int firstScoreTurn = 40;
-            const int stepScoreTurn = 5;
-            if (i >= firstScoreTurn && !(i % stepScoreTurn)) {
-                double s = scorer.score(state);
-                score += s / ((i - firstScoreTurn + stepScoreTurn) / stepScoreTurn);
-            }
-        }
-
-        track.setScore(score);
+        track.setScore(scorer.scoreTrack(track));
     }
 
     sort(tracks.rbegin(), tracks.rend());
@@ -245,15 +230,16 @@ Go solve(const World& world, const vector<Tile>& path) {
         auto state = State(startState);
         for (auto& go : bestTrack.moves()) {
             state.apply(go);
+            cout << "  " << go.toString() << endl;
             // Debug::debug = false;
-            // vis->drawRect(state.me().rectangle);
+            vis->drawRect(state.me().rectangle);
         }
         vis->drawRect(state.me().rectangle);
 #ifdef DEBUG_OUTPUT
         cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score() <<
             " best-move " << bestMove.toString() << " " << state.me().toString() << endl;
 #endif
-        scorer.score(state, true);
+        scorer.scoreState(state, true);
     }
 
     previousTracks.resize(tracks.size());

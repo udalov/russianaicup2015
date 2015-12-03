@@ -9,8 +9,10 @@ using std::vector;
 
 class Track {
 public:
-    Track() : myMoves(), myScore(Scorer::NO_SCORE) { }
-    Track(const vector<Go>& moves) : myMoves(moves), myScore(Scorer::NO_SCORE) { }
+    static constexpr double NO_SCORE = -1e42;
+
+    Track() : myMoves(), myScore(NO_SCORE) { }
+    Track(const vector<Go>& moves) : myMoves(moves), myScore(NO_SCORE) { }
 
     double score() const { return myScore; }
     const vector<Go>& moves() const { return myMoves; }
