@@ -11,6 +11,7 @@ class Map {
 public:
     unsigned long width;
     unsigned long height;
+    int hashCode;
 
     static Map& getMap() {
         static Map instance;
@@ -18,6 +19,7 @@ public:
     }
 
     // Each element is a bit mask of edges to (+1, 0) [bit #0], (0, +1), (-1, 0), (0, -1) [bit #3]
+    // TODO: return 0 on out of bounds
     int get(unsigned long x, unsigned long y) const;
 
     void update(const World& world);

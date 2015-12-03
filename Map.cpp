@@ -35,9 +35,12 @@ void Map::update(const World& world) {
         graph.resize(width * height);
     }
 
+    hashCode = 0;
     for (unsigned long i = 0; i < width; i++) {
         for (unsigned long j = 0; j < height; j++) {
-            graph[i * height + j] = getEdgesByTileType(tiles[i][j]);
+            int value = getEdgesByTileType(tiles[i][j]);
+            graph[i * height + j] = value;
+            hashCode = hashCode * 31 + value;
         }
     }
 }
