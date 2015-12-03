@@ -414,6 +414,9 @@ Rect rectangleByUnit(double angle, double x, double y, double width, double heig
 void CarPosition::advance(const Go& move) {
     static auto& game = Const::getGame();
 
+    static const double halfCarWidth = game.getCarWidth() / 2;
+    static const double halfCarHeight = game.getCarHeight() / 2;
+
     static const double carAngularSpeedFactor = game.getCarAngularSpeedFactor();
     static const int nitroDurationTicks = game.getNitroDurationTicks();
     static const double nitroEnginePowerFactor = game.getNitroEnginePowerFactor();
@@ -451,8 +454,18 @@ void CarPosition::advance(const Go& move) {
     // Location
 
     location += velocity;
-    for (auto& point : rectangle.points()) {
-        point += velocity;
+
+    {
+        // TODO: repeated code with rectangleByUnit()
+        auto& points = rectangle.points();
+        auto forward = dir * halfCarWidth;
+        auto sideways = side * halfCarHeight;
+        auto lpf = location + forward;
+        auto lmf = location - forward;
+        points[0] = lpf - sideways;
+        points[1] = lpf + sideways;
+        points[2] = lmf + sideways;
+        points[3] = lmf - sideways;
     }
 
     if (!move.brake) {
