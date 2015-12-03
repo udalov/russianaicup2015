@@ -41,9 +41,9 @@ void initialize(const Game& game) {
     vis->send("hello");
 
     Const::getInstance().game = game;
-    cout.precision(8);
+    cout.precision(3);
     cout << fixed;
-    cerr.precision(8);
+    cerr.precision(3);
     cerr << fixed;
 }
 

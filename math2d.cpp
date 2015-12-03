@@ -169,14 +169,14 @@ double normalizeAngle(double alpha) {
 
 string Vec::toString() const {
     ostringstream ss;
-    ss.precision(8);
+    ss.precision(3);
     ss << fixed << "(" << x << ", " << y << ")";
     return ss.str();
 }
 
 string Point::toString() const {
     ostringstream ss;
-    ss.precision(8);
+    ss.precision(3);
     ss << fixed << "(" << x << ", " << y << ")";
     return ss.str();
 }
@@ -187,7 +187,7 @@ string Segment::toString() const {
 
 string Circle::toString() const {
     ostringstream ss;
-    ss.precision(8);
+    ss.precision(3);
     ss << fixed << "(" << center.x << ", " << center.y << ", " << radius << ")";
     return ss.str();
 }

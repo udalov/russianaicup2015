@@ -48,7 +48,7 @@ double Vec3D::operator*(const Vec3D& other) const {
 
 string Vec3D::toString() const {
     ostringstream ss;
-    ss.precision(8);
+    ss.precision(3);
     ss << fixed << "(" << x << ", " << y << ", " << z << ")";
     return ss.str();
 }
