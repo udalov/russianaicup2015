@@ -11,8 +11,6 @@ using namespace std;
 #define KEEP WheelTurnDirection::KEEP
 #define TURN_RIGHT WheelTurnDirection::TURN_RIGHT
 
-const double SURVIVAL_RATE = 0.15;
-
 bool Track::operator<(const Track& other) const {
     return myScore < other.myScore;
 }
@@ -24,25 +22,28 @@ Track Track::rotate() const {
     return Track(moves);
 }
 
-default_random_engine createRandomEngine() {
-    default_random_engine rng;
+default_random_engine& createRandomEngine() {
+    static default_random_engine rng;
     rng.seed(42);
     return rng;
 }
 
-void collectTracks(const CarPosition& me, vector<Track>& result) {
-    static auto rng = createRandomEngine();
-
-    const int firstDuration = 5;
-    const int secondDuration = 25;
-    const int thirdDuration = 50;
-
-    vector<Go> forwardMoves;
+vector<Go>& createForwardMoves() {
+    static vector<Go> result;
     for (auto& wheelTurn : { TURN_LEFT, KEEP, TURN_RIGHT }) {
         for (bool brake : { false, true }) {
-            forwardMoves.emplace_back(1.0, wheelTurn, brake);
+            result.emplace_back(1.0, wheelTurn, brake);
         }
     }
+    return result;
+}
+
+void collectTracksThreePhases(
+        vector<Track>& result, default_random_engine& rng,
+        int firstDuration, int secondDuration, int thirdDuration,
+        double survivalRate
+) {
+    static auto& forwardMoves = createForwardMoves();
 
     uniform_real_distribution<> survival(0, 1);
 
@@ -67,7 +68,7 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
                     moves.push_back(thirdMove);
                 }
 
-                if (survival(rng) < SURVIVAL_RATE) {
+                if (survival(rng) < survivalRate) {
                     result.emplace_back(moves);
                 }
                 
@@ -79,7 +80,9 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
 
         moves.erase(moves.end() - firstDuration, moves.end());
     }
+}
 
+void experimentalMutateTracks(vector<Track>& result, default_random_engine& rng) {
     // TODO: experimental stuff
 
     uniform_int_distribution<int> randTrack(0, result.size() - 1);
@@ -101,4 +104,12 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
         }
         result.emplace_back(moves);
     }
+}
+
+void collectTracks(const CarPosition& me, vector<Track>& result) {
+    static auto& rng = createRandomEngine();
+
+    collectTracksThreePhases(result, rng, 5, 25, 50, 0.15);
+
+    experimentalMutateTracks(result, rng);
 }
