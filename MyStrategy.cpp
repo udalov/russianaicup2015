@@ -225,22 +225,21 @@ Go solve(const World& world, const vector<Tile>& path) {
     auto& bestTrack = tracks.front();
     auto bestMove = bestTrack.moves().empty() ? Go() : bestTrack.moves().front();
 
+#ifdef VISUALIZE
     {
         // Debug::debug = true;
         auto state = State(startState);
         for (auto& go : bestTrack.moves()) {
             state.apply(go);
-            cout << "  " << go.toString() << endl;
             // Debug::debug = false;
             vis->drawRect(state.me().rectangle);
         }
         vis->drawRect(state.me().rectangle);
-#ifdef DEBUG_OUTPUT
         cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score() <<
             " best-move " << bestMove.toString() << " " << state.me().toString() << endl;
-#endif
         scorer.scoreState(state, true);
     }
+#endif
 
     previousTracks.resize(tracks.size());
     transform(tracks.begin(), tracks.end(), previousTracks.begin(), [](const Track& track) {

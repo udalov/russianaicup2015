@@ -193,8 +193,8 @@ Walls *computeWalls() {
     static const double tileSize = game.getTrackTileSize();
 
     // To avoid driving right against the walls and corners
-    static const double segmentMargin = game.getTrackTileMargin() * 1.05;
-    static const double circleRadius = game.getTrackTileMargin() * 1.15;
+    static const double segmentMargin = game.getTrackTileMargin() * 1.01;
+    static const double circleRadius = game.getTrackTileMargin() * 1.05;
 
     auto segments = vector<Segment>(mapWidth * mapHeight * 4, Segment { Point(), Point() });
     auto circles = vector<Circle>(mapWidth * mapHeight * 4, Circle { Point(), double() });
