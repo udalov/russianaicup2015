@@ -336,6 +336,7 @@ void applyBonus(CarPosition& car, BonusPosition& bonus) {
     }
 }
 
+// TODO (!): optimize
 void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses) {
     static const double maximumRelevantDistance = myHypot(
             (Const::getGame().getCarHeight() + Const::getGame().getBonusSize()) / 2,
@@ -349,9 +350,13 @@ void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses) {
     for (auto& bonus : bonuses) {
         // if (Debug::debug) cout << "  bonus at " << bonus.location.toString() << " " << bonus.isAlive << " distance " << location.distanceTo(bonus.location) << endl;
         if (!bonus.isAlive) continue;
-        if (location.distanceTo(bonus.location) > maximumRelevantDistance) continue;
+        auto& bonusLocation = bonus.location;
+        auto dx = location.x - bonusLocation.x;
+        if (dx < -maximumRelevantDistance || dx > maximumRelevantDistance) continue;
+        auto dy = location.y - bonusLocation.y;
+        if (dy < -maximumRelevantDistance || dy > maximumRelevantDistance) continue;
+        if (location.distanceTo(bonusLocation) > maximumRelevantDistance) continue;
 
-        // TODO: optimize
         bool signedDistancesNegative = true;
         bool shouldApply = false;
         for (unsigned long i = 0, size = points.size(); i < size; i++) {
@@ -360,7 +365,7 @@ void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses) {
                 shouldApply = true;
                 break;
             }
-            signedDistancesNegative &= Line(side.p1, side.p2).signedDistanceFrom(bonus.location) < 0;
+            signedDistancesNegative &= Line(side.p1, side.p2).signedDistanceFrom(bonusLocation) < 0;
         }
 
         if (shouldApply || signedDistancesNegative) {
