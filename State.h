@@ -16,6 +16,7 @@ using model::Car;
 using model::OilSlick;
 using model::Projectile;
 using model::World;
+using std::move;
 using std::string;
 using std::vector;
 
@@ -85,6 +86,26 @@ struct BonusPosition {
     bool isAlive;
 
     BonusPosition(const Bonus *bonus);
+    BonusPosition(const BonusPosition& other) : original(other.original), location(other.location), outerRectangle(other.outerRectangle), innerRectangle(other.innerRectangle), isAlive(other.isAlive) { }
+    BonusPosition(BonusPosition&& other) : original(other.original), location(other.location), outerRectangle(move(other.outerRectangle)), innerRectangle(move(other.innerRectangle)), isAlive(other.isAlive) { }
+
+    BonusPosition& operator=(const BonusPosition& other) {
+        original = other.original;
+        location = other.location;
+        outerRectangle = other.outerRectangle;
+        innerRectangle = other.innerRectangle;
+        isAlive = other.isAlive;
+        return *this;
+    }
+
+    BonusPosition& operator=(BonusPosition&& other) {
+        original = other.original;
+        location = other.location;
+        outerRectangle = move(other.outerRectangle);
+        innerRectangle = move(other.innerRectangle);
+        isAlive = other.isAlive;
+        return *this;
+    }
 };
 
 struct State {
@@ -93,6 +114,7 @@ struct State {
     vector<OilSlickPosition> oilSlicks;
     vector<WasherPosition> washers;
     vector<BonusPosition> bonuses;
+    vector<double> bonusX; // X coords of bonuses
 
     State(const World *world);
 

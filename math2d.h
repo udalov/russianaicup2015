@@ -32,10 +32,16 @@ struct Vec {
     Vec(double angle) : x(myCos(angle)), y(mySin(angle)) { }
     Vec(const Point& p1, const Point& p2);
 
-    Vec *operator=(const Vec& other) {
+    Vec& operator=(const Vec& other) {
         x = other.x;
         y = other.y;
-        return this;
+        return *this;
+    }
+
+    Vec& operator=(Vec&& other) {
+        x = other.x;
+        y = other.y;
+        return *this;
     }
 
     bool operator==(const Vec& other) const {
@@ -77,16 +83,16 @@ struct Point {
     Point(double x, double y) : x(x), y(y) { }
     Point(const Point& other) : x(other.x), y(other.y) { }
 
-    Point *operator=(const Point& other) {
+    Point& operator=(const Point& other) {
         x = other.x;
         y = other.y;
-        return this;
+        return *this;
     }
 
-    Point *operator=(Point&& other) {
+    Point& operator=(Point&& other) {
         x = other.x;
         y = other.y;
-        return this;
+        return *this;
     }
 
     bool operator==(const Point& other) const {
@@ -138,6 +144,16 @@ public:
     Rect(const vector<Point>& points) : myPoints(points) { }
     Rect(const Rect& other) : myPoints(other.myPoints) { }
     Rect(Rect&& other) : myPoints(move(other.myPoints)) { }
+
+    Rect& operator=(const Rect& other) {
+        myPoints = other.myPoints;
+        return *this;
+    }
+
+    Rect& operator=(Rect&& other) {
+        myPoints = move(other.myPoints);
+        return *this;
+    }
 
     double distanceFrom(const Point& point) const;
 

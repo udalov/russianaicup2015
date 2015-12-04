@@ -42,6 +42,14 @@ State::State(const World *world) : original(world) {
     for (auto& bonus : world->getBonuses()) {
         bonuses.emplace_back(&bonus);
     }
+    sort(bonuses.begin(), bonuses.end(), [](const BonusPosition& b1, const BonusPosition& b2) {
+        if (b1.location.x < b2.location.x) return true;
+        if (b1.location.x > b2.location.x) return false;
+        return b1.location.y < b2.location.y;
+    });
+    for (auto& bonus : bonuses) {
+        bonusX.push_back(bonus.location.x);
+    }
 }
 
 double updateEnginePower(double carEnginePower, double moveEnginePower) {
@@ -336,8 +344,7 @@ void applyBonus(CarPosition& car, BonusPosition& bonus) {
     }
 }
 
-// TODO (!): optimize
-void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses) {
+void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses, const vector<double>& bonusX) {
     static const double maximumRelevantDistance = myHypot(
             (Const::getGame().getCarHeight() + Const::getGame().getBonusSize()) / 2,
             (Const::getGame().getCarWidth() + Const::getGame().getBonusSize()) / 2
@@ -346,8 +353,12 @@ void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses) {
     auto& location = car.location;
     auto& points = car.rectangle.points();
     
+    auto bonusBegin = lower_bound(bonusX.begin(), bonusX.end(), location.x - maximumRelevantDistance) - bonusX.begin();
+    auto bonusEnd = upper_bound(bonusX.begin(), bonusX.end(), location.x + maximumRelevantDistance) - bonusX.begin();
+
     Point unused;
-    for (auto& bonus : bonuses) {
+    for (auto i = bonusBegin; i < bonusEnd; i++) {
+        auto& bonus = bonuses[i];
         // if (Debug::debug) cout << "  bonus at " << bonus.location.toString() << " " << bonus.isAlive << " distance " << location.distanceTo(bonus.location) << endl;
         if (!bonus.isAlive) continue;
         auto& bonusLocation = bonus.location;
@@ -377,9 +388,10 @@ void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses) {
 
 void State::apply(const Go& move) {
     // TODO: simulate all cars
-    cars.front().advance(move);
-    collideCarWithWalls(cars.front());
-    collectBonuses(cars.front(), bonuses);
+    auto& car = cars.front();
+    car.advance(move);
+    collideCarWithWalls(car);
+    collectBonuses(car, bonuses, bonusX);
 
     for (auto& oilSlick : oilSlicks) {
         oilSlick.apply();
