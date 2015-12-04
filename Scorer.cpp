@@ -1,4 +1,5 @@
 #include "Scorer.h"
+#include "Debug.h"
 #include "math2d.h"
 
 #include <algorithm>

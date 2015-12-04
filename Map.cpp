@@ -1,6 +1,10 @@
 #include "Map.h"
+#include "Debug.h"
+
+#include <iostream>
 
 using namespace model;
+using namespace std;
 
 char getEdgesByTileType(TileType type) {
     switch (type) {
@@ -43,4 +47,6 @@ void Map::update(const World& world) {
             hashCode = hashCode * 31 + value;
         }
     }
+
+    Debug::isMap20 |= hashCode == 1484208832;
 }

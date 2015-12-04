@@ -1,5 +1,6 @@
 #include "Path.h"
 #include "Const.h"
+#include "Debug.h"
 #include "Map.h"
 
 #include <algorithm>
@@ -121,6 +122,13 @@ vector<DirectedTile> bestPath(const DirectedTile& start, const Tile& finish) {
         }
 
         for (auto& next : { v.turnLeft(), v.turnRight() }) {
+            /*
+            // TODO (!)
+            if (Debug::isMap20) {
+                if (v.tile == start.tile && v.direction != start.direction) continue;
+            }
+            */
+
             if (prev.find(next) == prev.end()) {
                 prev.insert({ next, v });
                 q.push_back(next);
