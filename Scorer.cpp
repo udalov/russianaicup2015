@@ -140,7 +140,7 @@ double Scorer::scoreState(const State& state, bool debug) const {
     result -= nextTurnAngle * 1400.0;
     */
 
-    result += (me.velocity.projection(centerLine) / centerLine.length()) * 0.02;
+    result += me.velocity.projection(centerLine) * 0.2;
 
     result += (me.medicines + me.projectiles + me.nitroCharges + me.oilCanisters + me.pureScore) * 0.4;
 
