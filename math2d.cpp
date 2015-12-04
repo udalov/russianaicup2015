@@ -93,6 +93,10 @@ double Point::distanceTo(const Point& other) const {
     return myHypot(x - other.x, y - other.y);
 }
 
+Point Point::between(const Point& p1, const Point& p2) {
+    return Point((p1.x + p2.x) / 2.0, (p1.y + p2.y) / 2.0);
+}
+
 double Line::signedDistanceFrom(const Point& point) const {
     return (a * point.x + b * point.y - c) / myHypot(a, b);
 }

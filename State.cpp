@@ -456,16 +456,15 @@ void CarPosition::advance(const Go& move) {
     location += velocity;
 
     {
-        // TODO: repeated code with rectangleByUnit()
+        // See rectangleByUnit()
         auto& points = rectangle.points();
-        auto forward = dir * halfCarWidth;
-        auto sideways = side * halfCarHeight;
-        auto lpf = location + forward;
-        auto lmf = location - forward;
-        points[0] = lpf - sideways;
-        points[1] = lpf + sideways;
-        points[2] = lmf + sideways;
-        points[3] = lmf - sideways;
+        auto x = location.x, y = location.y;
+        auto forwardX = dir.x * halfCarWidth, forwardY = dir.y * halfCarWidth;
+        auto sideX = side.x * halfCarHeight, sideY = side.y * halfCarHeight;
+        points[0].x = x + forwardX - sideX; points[0].y = y + forwardY - sideY;
+        points[1].x = x + forwardX + sideX; points[1].y = y + forwardY + sideY;
+        points[2].x = x - forwardX + sideX; points[2].y = y - forwardY + sideY;
+        points[3].x = x - forwardX - sideX; points[3].y = y - forwardY - sideY;
     }
 
     if (!move.brake) {
@@ -519,9 +518,8 @@ CarPosition::CarPosition(const Car *car) : original(car),
         pureScore(0) { }
 
 Point CarPosition::bumperCenter() const {
-    static const double carWidth = Const::getGame().getCarWidth();
-
-    return location + direction() * (carWidth / 2);
+    // return location + direction() * (Const::getGame().getCarWidth() / 2);
+    return Point::between(rectangle.points()[0], rectangle.points()[1]);
 }
 
 Tile CarPosition::tile() const {

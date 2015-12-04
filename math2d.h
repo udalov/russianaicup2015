@@ -102,6 +102,8 @@ struct Point {
     double distanceTo(const Point& other) const;
 
     string toString() const;
+
+    static Point between(const Point& p1, const Point& p2);
 };
 
 struct Line {

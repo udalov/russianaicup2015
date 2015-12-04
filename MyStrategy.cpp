@@ -360,6 +360,7 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 
     auto& map = Map::getMap();
     map.update(world);
+    Debug::tick = world.getTick();
 
     if (self.isFinishedTrack()) return;
 
