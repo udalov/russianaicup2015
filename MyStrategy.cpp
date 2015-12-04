@@ -257,7 +257,10 @@ bool shouldFire(const State& startState) {
 
     CollisionInfo unused;
     for (unsigned long carIndex = 1; carIndex < startState.cars.size(); carIndex++) {
-        if (startState.cars[carIndex].original->getPlayerId() == me.original->getPlayerId()) continue;
+        auto originalCar = startState.cars[carIndex].original;
+        if (originalCar->getPlayerId() == me.original->getPlayerId()) continue;
+        if (originalCar->isFinishedTrack()) continue;
+        if (abs(originalCar->getDurability()) < 1e-9) continue;
 
         auto state = State(startState);
         swap(state.cars.front(), state.cars[carIndex]);
@@ -444,9 +447,10 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         initialize(game);
     }
 
+    Debug::tick = world.getTick();
+
     auto& map = Map::getMap();
     map.update(world);
-    Debug::tick = world.getTick();
 
     if (self.isFinishedTrack()) return;
 
