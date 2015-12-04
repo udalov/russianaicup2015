@@ -16,7 +16,7 @@ struct Tile {
 
     Tile(): x(), y() { }
     Tile(int x, int y): x(x), y(y) { }
-    Tile(const Tile& other): x(other.x), y(other.y) { }
+    Tile(const Point& point);
 
     Tile *operator=(const Tile& other);
 

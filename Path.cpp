@@ -10,6 +10,15 @@
 
 using namespace std;
 
+Tile::Tile(const Point& point) {
+    static const double tileSize = Const::getGame().getTrackTileSize();
+    static const int widthM1 = Map::getMap().width - 1;
+    static const int heightM1 = Map::getMap().height - 1;
+
+    x = max(min(static_cast<int>(point.x / tileSize), widthM1), 0);
+    y = max(min(static_cast<int>(point.y / tileSize), heightM1), 0);
+}
+
 Tile *Tile::operator=(const Tile& other) {
     x = other.x;
     y = other.y;

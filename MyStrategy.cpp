@@ -1,5 +1,6 @@
 #include "math2d.h"
 #include "MyStrategy.h"
+#include "Collider.h"
 #include "Const.h"
 #include "Debug.h"
 #include "Map.h"
@@ -29,6 +30,7 @@ using namespace std;
 #endif
 
 const int NITRO_CHECK_PERIOD = 10;
+const int FIRE_CHECK_PERIOD = 8;
 
 VisClient *vis = nullptr;
 
@@ -192,6 +194,85 @@ void drawMap() {
 
 // ----
 
+bool intersectsWallsHeuristic(const Point& point, double radius) {
+    static const int sx[] = {1, -1, -1, 1};
+    static const int sy[] = {1, 1, -1, -1};
+
+    auto& map = Map::getMap();
+
+    static const double trackTileSize = Const::getGame().getTrackTileSize();
+    static const double trackTileMargin = Const::getGame().getTrackTileMargin();
+
+    auto tile = Tile(point);
+    auto center = tile.toPoint();
+
+    for (int d = 0; d < 4; d++) {
+        auto corner = Point(
+                center.x + sx[d] * trackTileSize / 2.0,
+                center.y + sy[d] * trackTileSize / 2.0
+        );
+        if (point.distanceTo(corner) < radius + trackTileMargin + 1e-6) return true;
+
+        if (map.get(tile.x, tile.y) & (1 << d)) continue;
+
+        auto previousCorner = Point(
+                center.x + sx[(d + 3) & 3] * trackTileSize / 2.0,
+                center.y + sy[(d + 3) & 3] * trackTileSize / 2.0
+        );
+        auto segment = Segment(corner, previousCorner);
+        if (segment.distanceFrom(point) < radius + trackTileMargin + 1e-6) return true;
+    }
+
+    return false;
+}
+
+bool shouldFire(const State& startState) {
+    static auto& game = Const::getGame();
+
+    const unsigned long ticksLookahead = 30;
+    const unsigned long ticksCooldown = 4;
+
+    auto& me = startState.me();
+
+    auto radius = me.isBuggy() ? game.getWasherRadius() : game.getTireRadius();
+    auto initialSpeed = me.isBuggy() ? game.getWasherInitialSpeed() : game.getTireInitialSpeed();
+    auto velocity = me.direction() * initialSpeed;
+
+    vector<Point> projectile;
+    auto location = me.location;
+    for (unsigned long tick = 0; tick < ticksLookahead; tick++) {
+        location += velocity;
+        projectile.push_back(location);
+        if (!me.isBuggy() && intersectsWallsHeuristic(location, radius)) {
+            // cout << "  projectile from " << me.toString() << endl;
+            // cout << "  will intersect the wall on tick " << tick << " at " << location.toString() << endl;
+            break;
+        }
+    }
+
+    auto distance = radius + game.getCarHeight() / 2;
+    auto enemyMove = Go(1.0, KEEP);
+
+    // for (auto& t : projectile) { vis->drawCircle(t, distance); }
+
+    CollisionInfo unused;
+    for (unsigned long carIndex = 1; carIndex < startState.cars.size(); carIndex++) {
+        if (startState.cars[carIndex].original->getPlayerId() == me.original->getPlayerId()) continue;
+
+        auto state = State(startState);
+        swap(state.cars.front(), state.cars[carIndex]);
+        auto& enemy = state.cars.front();
+        for (unsigned long tick = 0; tick < projectile.size(); tick++) {
+            state.apply(enemyMove);
+            if (tick > ticksCooldown && enemy.location.distanceTo(projectile[tick]) < distance) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 // TODO: only use them if they are from the previous tick
 vector<Track> previousTracks;
 
@@ -245,6 +326,12 @@ Go solve(const World& world, const vector<Tile>& path) {
     transform(tracks.begin(), tracks.end(), previousTracks.begin(), [](const Track& track) {
         return track.rotate();
     });
+
+    if (!(world.getTick() % FIRE_CHECK_PERIOD) && startState.me().projectiles > 0 && startState.me().original->getRemainingProjectileCooldownTicks() == 0) {
+        if (shouldFire(startState)) {
+            bestMove.throwProjectile = true;
+        }
+    }
 
     return bestMove;
 }
