@@ -18,12 +18,13 @@ const double EPSILON = 1e-7;
 // The enemy, on the other hand, will pick up a bonus if the rectangle this much _larger_ intersects his rectangle.
 const double BONUS_SIZE_RATIO = 1.25;
 
-State::State(const World *world) : original(world) {
+State::State(const World *world, int teammateIndex) : original(world) {
     auto& cars = world->getCars();
     this->cars.reserve(cars.size());
-    for (bool teammates : { true, false }) {
+    auto myPlayerId = world->getMyPlayer().getId();
+    for (bool me : { true, false }) {
         for (unsigned long i = 0, size = cars.size(); i < size; i++) {
-            if (teammates == (world->getMyPlayer().getId() == cars[i].getPlayerId())) {
+            if (me == (myPlayerId == cars[i].getPlayerId() && cars[i].getTeammateIndex() == teammateIndex)) {
                 this->cars.emplace_back(&cars[i]);
             }
         }

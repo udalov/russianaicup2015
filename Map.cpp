@@ -20,7 +20,8 @@ char getEdgesByTileType(TileType type) {
         case TOP_HEADED_T: return 0b1101;
         case BOTTOM_HEADED_T: return 0b0111;
         case CROSSROADS: return 0b1111;
-        case UNKNOWN: case _UNKNOWN_TILE_TYPE_: case _TILE_TYPE_COUNT_:;
+        case UNKNOWN: return 0b1111;
+        case _UNKNOWN_TILE_TYPE_: case _TILE_TYPE_COUNT_:;
     }
 
     return 0;

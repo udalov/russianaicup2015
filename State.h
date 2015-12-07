@@ -116,7 +116,7 @@ struct State {
     vector<BonusPosition> bonuses;
     vector<double> bonusX; // X coords of bonuses
 
-    State(const World *world);
+    State(const World *world, int teammateIndex);
 
     const CarPosition& me() const;
 

@@ -121,7 +121,7 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
     auto experimentalMove = goDebugPhysicsPrediction(world.getTick());
     experimentalMove.applyTo(self, move);
 
-    auto currentState = State(&world);
+    auto currentState = State(&world, self.getTeammateIndex());
 
     if (isPhysicsPredictionOutputNeeded(world.getTick())) {
         const double eps = 1e-9;
@@ -279,8 +279,8 @@ bool shouldFire(const State& startState) {
 // TODO: only use them if they are from the previous tick
 vector<Track> previousTracks;
 
-Go solve(const World& world, const vector<Tile>& path) {
-    auto startState = State(&world);
+Go solve(const World& world, const Car& self, const vector<Tile>& path) {
+    auto startState = State(&world, self.getTeammateIndex());
 
     // TODO: constant
     auto tracks = vector<Track>(previousTracks.begin(), previousTracks.begin() + min(previousTracks.size(),
@@ -360,9 +360,8 @@ vector<Tile> computePath(const Car& self, const World& world, const Game& game) 
     return result;
 }
 
-bool safeModeForward(const World& world, Go& result) {
+bool safeModeForward(const State& startState, Go& result) {
     // Try going forward for the next epsilon ticks and see if it helps
-    auto startState = State(&world);
     vector<Track> tracks;
     for (auto wheel : { TURN_LEFT, KEEP, TURN_RIGHT }) {
         tracks.emplace_back(vector<Go>(25, Go(1.0, wheel)));
@@ -381,19 +380,23 @@ bool safeModeForward(const World& world, Go& result) {
 }
 
 bool safeMode(const CarPosition& me, const World& world, Move& move) {
-    static int lastNonZeroSpeedTick = Const::getGame().getInitialFreezeDurationTicks();
-    static int safeUntilTick = -1;
-    static int waitUntilTick = -1;
+    static int lastNonZeroSpeedTick[] = {
+        Const::getGame().getInitialFreezeDurationTicks(),
+        Const::getGame().getInitialFreezeDurationTicks()
+    };
+    static int safeUntilTick[] = { -1, -1 };
+    static int waitUntilTick[] = { -1, -1 };
 
     auto tick = world.getTick();
     auto nonZeroSpeed = abs(me.velocity.length()) > 1.0;
+    auto index = me.original->getTeammateIndex();
 
-    // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick << " safe-until " << safeUntilTick << " wait-until " << waitUntilTick << " non-zero " << nonZeroSpeed << endl;
+    // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick[index] << " safe-until " << safeUntilTick[index] << " wait-until " << waitUntilTick[index] << " non-zero " << nonZeroSpeed << endl;
 
-    if (tick <= safeUntilTick) {
+    if (tick <= safeUntilTick[index]) {
         /*
         Go forward;
-        if (safeModeForward(world, forward)) {
+        if (safeModeForward(State(world, me.original->getTeammateIndex()), forward)) {
             forward.applyTo(*me.original, move);
             return true;
         }
@@ -406,20 +409,20 @@ bool safeMode(const CarPosition& me, const World& world, Move& move) {
         return true;
     }
 
-    if (nonZeroSpeed || tick <= safeUntilTick || tick <= waitUntilTick) {
-        lastNonZeroSpeedTick = tick;
+    if (nonZeroSpeed || tick <= safeUntilTick[index] || tick <= waitUntilTick[index]) {
+        lastNonZeroSpeedTick[index] = tick;
     }
     
-    if (tick <= waitUntilTick || tick - lastNonZeroSpeedTick < 20) {
+    if (tick <= waitUntilTick[index] || tick - lastNonZeroSpeedTick[index] < 20) {
         return false;
     }
 
-    safeUntilTick = tick + 120;
-    waitUntilTick = tick + 180;
+    safeUntilTick[index] = tick + 120;
+    waitUntilTick[index] = tick + 180;
 
     /*
     Go forward;
-    if (safeModeForward(world, forward)) {
+    if (safeModeForward(me.original->getTeammateIndex()), forward)) {
         forward.applyTo(*me.original, move);
         return true;
     }
@@ -470,7 +473,7 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 
     auto path = computePath(self, world, game);
 
-    Go solution = solve(world, path);
+    Go solution = solve(world, self, path);
     solution.applyTo(self, move);
 
 #ifdef VISUALIZE
