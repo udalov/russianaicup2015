@@ -277,11 +277,12 @@ bool shouldFire(const State& startState) {
 }
 
 // TODO: only use them if they are from the previous tick
-vector<Track> previousTracks;
+vector<Track> previousTracksAllTeam[2];
 
 Go solve(const World& world, const Car& self, const vector<Tile>& path) {
     auto startState = State(&world, self.getTeammateIndex());
 
+    auto& previousTracks = previousTracksAllTeam[self.getTeammateIndex()];
     // TODO: constant
     auto tracks = vector<Track>(previousTracks.begin(), previousTracks.begin() + min(previousTracks.size(),
             static_cast<vector<Track>::size_type>(50)
