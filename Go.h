@@ -19,12 +19,11 @@ enum class WheelTurnDirection {
 
 struct Go {
     double enginePower;
-    WheelTurnDirection wheelTurn;
-    // TODO: pack
-    bool brake;
-    bool throwProjectile;
-    bool useNitro;
-    bool spillOil;
+    WheelTurnDirection wheelTurn : 4;
+    bool brake : 1;
+    bool throwProjectile : 1;
+    bool useNitro : 1;
+    bool spillOil : 1;
 
     Go() : enginePower(), wheelTurn(WheelTurnDirection::KEEP), brake(), throwProjectile(), useNitro(), spillOil() { }
 

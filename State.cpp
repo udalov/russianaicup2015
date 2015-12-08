@@ -6,6 +6,7 @@
 #include "math3d.h"
 
 #include <algorithm>
+#include <exception>
 #include <memory>
 #include <sstream>
 #include <iostream>
@@ -15,43 +16,45 @@ using namespace std;
 const double EPSILON = 1e-7;
 
 // We consider that we pick up a bonus if the rectangle this much smaller than the bonus intersects our rectangle.
-// The enemy, on the other hand, will pick up a bonus if the rectangle this much _larger_ intersects his rectangle.
 const double BONUS_SIZE_RATIO = 1.25;
 
-State::State(const World *world, int teammateIndex) : original(world) {
-    auto& cars = world->getCars();
-    this->cars.reserve(cars.size());
-    auto myPlayerId = world->getMyPlayer().getId();
-    for (bool me : { true, false }) {
-        for (unsigned long i = 0, size = cars.size(); i < size; i++) {
-            if (me == (myPlayerId == cars[i].getPlayerId() && cars[i].getTeammateIndex() == teammateIndex)) {
-                this->cars.emplace_back(&cars[i]);
-            }
+CarPosition carById(const World *world, long long id) {
+    for (auto& car : world->getCars()) {
+        if (car.getId() == id) {
+            return CarPosition(world, &car);
         }
     }
+    throw invalid_argument(string("no car found by id ") + to_string(id));
+}
 
-    for (auto& oilSlick : world->getOilSlicks()) {
-        oilSlicks.emplace_back(&oilSlick);
+vector<BonusPosition> convertBonuses(const vector<Bonus>& bonuses) {
+    vector<BonusPosition> result;
+    result.reserve(bonuses.size());
+    for (auto& bonus : bonuses) {
+        result.emplace_back(&bonus);
     }
-
-    for (auto& projectile : world->getProjectiles()) {
-        if (projectile.getType() == model::WASHER) {
-            washers.emplace_back(&projectile);
-        }
-    }
-
-    for (auto& bonus : world->getBonuses()) {
-        bonuses.emplace_back(&bonus);
-    }
-    sort(bonuses.begin(), bonuses.end(), [](const BonusPosition& b1, const BonusPosition& b2) {
+    sort(result.begin(), result.end(), [](const BonusPosition& b1, const BonusPosition& b2) {
         if (b1.location.x < b2.location.x) return true;
         if (b1.location.x > b2.location.x) return false;
         return b1.location.y < b2.location.y;
     });
-    for (auto& bonus : bonuses) {
-        bonusX.push_back(bonus.location.x);
-    }
+    return result;
 }
+
+vector<double> computeBonusX(const vector<BonusPosition>& bonuses) {
+    vector<double> result;
+    result.reserve(bonuses.size());
+    for (auto& bonus : bonuses) {
+        result.push_back(bonus.location.x);
+    }
+    return result;
+}
+
+State::State(const World *world, long long id) : original(world),
+    car(carById(world, id)),
+    bonuses(convertBonuses(world->getBonuses())),
+    bonusX(computeBonusX(bonuses))
+{ }
 
 double updateEnginePower(double carEnginePower, double moveEnginePower) {
     static double maxChange = Const::getGame().getCarEnginePowerChangePerTick();
@@ -182,11 +185,11 @@ struct Walls {
     Walls(const vector<Segment>& segments, const vector<Circle>& corners) :
         segments(segments), corners(corners), height(Map::getMap().height) { }
 
-    const Segment& segment(unsigned long tx, unsigned long ty, int d) {
+    const Segment& segment(unsigned long tx, unsigned long ty, int d) const {
         return segments[((tx * height) + ty) * 4 + d];
     }
 
-    const Circle& corner(unsigned long tx, unsigned long ty, int d) {
+    const Circle& corner(unsigned long tx, unsigned long ty, int d) const {
         return corners[((tx * height) + ty) * 4 + d];
     }
 
@@ -201,7 +204,7 @@ Walls *computeWalls() {
     static const double mapHeight = Map::getMap().height;
     static const double tileSize = game.getTrackTileSize();
 
-    // To avoid driving right against the walls and corners
+    // To avoid driving right against walls and corners
     static const double segmentMargin = game.getTrackTileMargin() * 1.01;
     static const double circleRadius = game.getTrackTileMargin() * 1.05;
 
@@ -274,8 +277,12 @@ void collideCarWithSegmentWall(CarPosition& car, const Segment& wall, int d) {
 void collideCarWithCornerWall(CarPosition& car, const Circle& corner) {
     static const double carRadius = myHypot(Const::getGame().getCarHeight() / 2, Const::getGame().getCarWidth() / 2) + EPSILON;
 
-    if (car.location.distanceTo(corner.center) > corner.radius + carRadius) return;
-    if (car.rectangle.distanceFrom(corner.center) > corner.radius + EPSILON) return;
+    auto& location = car.location;
+    auto& center = corner.center;
+    double relevantDistance = corner.radius + carRadius;
+    if (abs(location.x - center.x) + abs(location.y - center.y) > relevantDistance) return;
+    if (location.distanceTo(center) > relevantDistance) return;
+    if (car.rectangle.distanceFrom(center) > corner.radius + EPSILON) return;
 
     CollisionInfo collision;
     if (collideCircleAndRect(car.rectangle, corner, collision)) {
@@ -297,18 +304,20 @@ void determineTileBounds(
 
     auto& p = rectangle.points();
 
-    auto minX = min(min((&p[0])->x, (&p[1])->x), min((&p[2])->x, (&p[3])->x));
-    auto maxX = max(max((&p[0])->x, (&p[1])->x), max((&p[2])->x, (&p[3])->x));
-    auto minY = min(min((&p[0])->y, (&p[1])->y), min((&p[2])->y, (&p[3])->y));
-    auto maxY = max(max((&p[0])->y, (&p[1])->y), max((&p[2])->y, (&p[3])->y));
+    auto x0 = p[0].x, x1 = p[1].x, x2 = p[2].x, x3 = p[3].x;
+    auto y0 = p[0].y, y1 = p[1].y, y2 = p[2].y, y3 = p[3].y;
+    if (x0 > x2) swap(x0, x2); if (x1 > x3) swap(x1, x3); if (x0 > x1) swap(x0, x1); if (x2 > x3) swap(x2, x3);
+    if (y0 > y2) swap(y0, y2); if (y1 > y3) swap(y1, y3); if (y0 > y1) swap(y0, y1); if (y2 > y3) swap(y2, y3);
 
-    txBegin = static_cast<unsigned long>(minX / tileSize);
-    txEnd = static_cast<unsigned long>(maxX / tileSize);
-    tyBegin = static_cast<unsigned long>(minY / tileSize);
-    tyEnd = static_cast<unsigned long>(maxY / tileSize);
+    txBegin = static_cast<unsigned long>(x0 / tileSize);
+    txEnd = static_cast<unsigned long>(x3 / tileSize);
+    tyBegin = static_cast<unsigned long>(y0 / tileSize);
+    tyEnd = static_cast<unsigned long>(y3 / tileSize);
 }
 
 void collideCarWithWalls(CarPosition& car) {
+    static const double trackTileSize = Const::getGame().getTrackTileSize();
+
     static Map& map = Map::getMap();
 
     static Walls *allWalls = computeWalls();
@@ -327,8 +336,15 @@ void collideCarWithWalls(CarPosition& car) {
                 if (!(tile & (1 << d))) {
                     collideCarWithSegmentWall(car, allWalls->segment(tx, ty, d), d);
                 }
-                collideCarWithCornerWall(car, allWalls->corner(tx, ty, d));
             }
+        }
+    }
+
+    auto cornerX = static_cast<unsigned long>(car.location.x / trackTileSize + 0.5);
+    if (cornerX < map.width) {
+        auto cornerY = static_cast<unsigned long>(car.location.y / trackTileSize + 0.5);
+        if (cornerY < map.height) {
+            collideCarWithCornerWall(car, allWalls->corner(cornerX, cornerY, 2));
         }
     }
 }
@@ -384,40 +400,12 @@ void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses, const vect
             applyBonus(car, bonus);
         }
     }
-
 }
 
 void State::apply(const Go& move) {
-    // TODO: simulate all cars
-    auto& car = cars.front();
     car.advance(move);
     collideCarWithWalls(car);
     collectBonuses(car, bonuses, bonusX);
-
-    for (auto& oilSlick : oilSlicks) {
-        oilSlick.apply();
-    }
-
-    for (auto& washer : washers) {
-        // TODO: add the condition when washers disappear
-        washer.apply();
-    }
-}
-
-const CarPosition& State::me() const {
-    return cars.front();
-}
-
-bool OilSlickPosition::isAlive() const {
-    return remainingTime > 0 /* or 1? */;
-}
-
-void OilSlickPosition::apply() {
-    remainingTime--;
-}
-
-void WasherPosition::apply() {
-    // TODO
 }
 
 Rect rectangleByUnit(double angle, double x, double y, double width, double height) {
@@ -519,7 +507,8 @@ void CarPosition::advance(const Go& move) {
     angle = normalizeAngle(angle + angularSpeed);
 }
 
-CarPosition::CarPosition(const Car *car) : original(car),
+CarPosition::CarPosition(const World *world, const Car *car) : original(car),
+        originalWorld(world),
         location(Point(car->getX(), car->getY())),
         velocity(Vec(car->getSpeedX(), car->getSpeedY())),
         angle(car->getAngle()),
@@ -541,15 +530,7 @@ Point CarPosition::bumperCenter() const {
 }
 
 Tile CarPosition::tile() const {
-    static const double tileSize = Const::getGame().getTrackTileSize();
-    static const int width = Map::getMap().width;
-    static const int height = Map::getMap().height;
-
-    Point bc = bumperCenter();
-    return Tile(
-            max(min(static_cast<int>(bc.x / tileSize), width - 1), 0),
-            max(min(static_cast<int>(bc.y / tileSize), height - 1), 0)
-    );
+    return Tile(bumperCenter());
 };
 
 bool CarPosition::isBuggy() const {
@@ -583,8 +564,6 @@ string CarPosition::toString() const {
 
 BonusPosition::BonusPosition(const Bonus *bonus) : original(bonus),
         location(Point(bonus->getX(), bonus->getY())),
-        outerRectangle(rectangleByUnit(bonus->getAngle(), bonus->getX(), bonus->getY(),
-                    bonus->getWidth() * BONUS_SIZE_RATIO, bonus->getHeight() * BONUS_SIZE_RATIO)),
         innerRectangle(rectangleByUnit(bonus->getAngle(), bonus->getX(), bonus->getY(),
                     bonus->getWidth() / BONUS_SIZE_RATIO, bonus->getHeight() / BONUS_SIZE_RATIO)),
         isAlive(true) { }

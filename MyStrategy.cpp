@@ -256,15 +256,13 @@ bool shouldFire(const State& startState) {
     // for (auto& t : projectile) { vis->drawCircle(t, distance); }
 
     CollisionInfo unused;
-    for (unsigned long carIndex = 1; carIndex < startState.cars.size(); carIndex++) {
-        auto originalCar = startState.cars[carIndex].original;
-        if (originalCar->getPlayerId() == me.original->getPlayerId()) continue;
-        if (originalCar->isFinishedTrack()) continue;
-        if (abs(originalCar->getDurability()) < 1e-9) continue;
+    for (auto& car : startState.original->getCars()) {
+        if (car.isTeammate()) continue;
+        if (car.isFinishedTrack()) continue;
+        if (abs(car.getDurability()) < 1e-9) continue;
 
-        auto state = State(startState);
-        swap(state.cars.front(), state.cars[carIndex]);
-        auto& enemy = state.cars.front();
+        auto state = State(startState.original, car.getId());
+        auto& enemy = state.me(); // Not me, but the enemy
         for (unsigned long tick = 0; tick < projectile.size(); tick++) {
             state.apply(enemyMove);
             if (tick > ticksCooldown && enemy.location.distanceTo(projectile[tick]) < distance) {
@@ -280,7 +278,7 @@ bool shouldFire(const State& startState) {
 vector<Track> previousTracksAllTeam[2];
 
 Go solve(const World& world, const Car& self, const vector<Tile>& path) {
-    auto startState = State(&world, self.getTeammateIndex());
+    auto startState = State(&world, self.getId());
 
     auto& previousTracks = previousTracksAllTeam[self.getTeammateIndex()];
     // TODO: constant
@@ -343,7 +341,7 @@ Go solve(const World& world, const Car& self, const vector<Tile>& path) {
 vector<Tile> computePath(const Car& self, const World& world, const Game& game) {
     auto& waypoints = world.getWaypoints();
     int i = self.getNextWaypointIndex();
-    DirectedTile start = CarPosition(&self).directedTile();
+    DirectedTile start = CarPosition(&world, &self).directedTile();
     vector<Tile> result;
     result.push_back(start.tile);
     for (int steps = 0; steps < 5; steps++) {
@@ -468,7 +466,7 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         return;
     }
 
-    if (safeMode(CarPosition(&self), world, move)) {
+    if (safeMode(CarPosition(&world, &self), world, move)) {
         return;
     }
 

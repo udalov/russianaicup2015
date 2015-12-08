@@ -22,6 +22,7 @@ using std::vector;
 
 struct CarPosition {
     const Car *original;
+    const World *originalWorld;
     Point location;
     Vec velocity;
     double angle;
@@ -38,7 +39,7 @@ struct CarPosition {
     int medicines;
     int pureScore;
 
-    CarPosition(const Car *car);
+    CarPosition(const World *world, const Car *car);
 
     Vec direction() const { return Vec(angle); }
 
@@ -53,72 +54,24 @@ struct CarPosition {
     string toString() const;
 };
 
-struct OilSlickPosition {
-    const OilSlick *original;
-    int remainingTime;
-
-    OilSlickPosition(const OilSlick *oilSlick)
-            : original(oilSlick),
-              remainingTime(oilSlick->getRemainingLifetime()) { }
-
-    bool isAlive() const;
-    void apply();
-};
-
-struct WasherPosition {
-    const Projectile *original;
-    Point location;
-    Vec velocity;
-
-    WasherPosition(const Projectile *washer)
-            : original(washer),
-              location(Point(washer->getX(), washer->getY())),
-              velocity(Vec(washer->getSpeedX(), washer->getSpeedY())) { }
-
-    void apply();
-};
-
 struct BonusPosition {
     const Bonus *original;
     Point location;
-    Rect outerRectangle;
     Rect innerRectangle;
     bool isAlive;
 
     BonusPosition(const Bonus *bonus);
-    BonusPosition(const BonusPosition& other) : original(other.original), location(other.location), outerRectangle(other.outerRectangle), innerRectangle(other.innerRectangle), isAlive(other.isAlive) { }
-    BonusPosition(BonusPosition&& other) : original(other.original), location(other.location), outerRectangle(move(other.outerRectangle)), innerRectangle(move(other.innerRectangle)), isAlive(other.isAlive) { }
-
-    BonusPosition& operator=(const BonusPosition& other) {
-        original = other.original;
-        location = other.location;
-        outerRectangle = other.outerRectangle;
-        innerRectangle = other.innerRectangle;
-        isAlive = other.isAlive;
-        return *this;
-    }
-
-    BonusPosition& operator=(BonusPosition&& other) {
-        original = other.original;
-        location = other.location;
-        outerRectangle = move(other.outerRectangle);
-        innerRectangle = move(other.innerRectangle);
-        isAlive = other.isAlive;
-        return *this;
-    }
 };
 
 struct State {
     const World *original;
-    vector<CarPosition> cars;
-    vector<OilSlickPosition> oilSlicks;
-    vector<WasherPosition> washers;
+    CarPosition car;
     vector<BonusPosition> bonuses;
     vector<double> bonusX; // X coords of bonuses
 
-    State(const World *world, int teammateIndex);
+    State(const World *world, long long id);
 
-    const CarPosition& me() const;
+    const CarPosition& me() const { return car; }
 
     void apply(const Go& move);
 };
