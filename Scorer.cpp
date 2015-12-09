@@ -78,7 +78,7 @@ double Scorer::scoreState(const State& state, bool debug) const {
     // TODO: store waypoint index in CarPosition and find shortest path here
     unsigned long startSeg = find(path.begin(), path.end(), startState.me().tile()) - path.begin();
     unsigned long nextSeg = find(path.begin() + startSeg, path.end(), me.tile()) - path.begin();
-    if (nextSeg == path.size() || nextSeg - startSeg >= 5) return -1e15; // TODO (!)
+    if (nextSeg == path.size() || nextSeg - startSeg >= 7) return -1e15; // TODO (!)
     nextSeg++;
 
     auto& next = pathSegment[nextSeg - 1];

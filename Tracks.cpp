@@ -111,7 +111,7 @@ void collectTracks(const CarPosition& me, vector<Track>& result) {
     static auto& rng = createRandomEngine();
 
     double survivalRate = (Debug::tick % 10) ? 0.1 : 0.2;
-    collectTracksThreePhases(result, rng, 5, 25, 50, survivalRate);
+    collectTracksThreePhases(result, rng, 5, 30, 70, survivalRate);
 
     experimentalMutateTracks(result, rng);
 }
