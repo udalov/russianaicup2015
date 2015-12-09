@@ -280,7 +280,6 @@ void collideCarWithCornerWall(CarPosition& car, const Circle& corner) {
     auto& location = car.location;
     auto& center = corner.center;
     double relevantDistance = corner.radius + carRadius;
-    if (abs(location.x - center.x) + abs(location.y - center.y) > relevantDistance) return;
     if (location.distanceTo(center) > relevantDistance) return;
     if (car.rectangle.distanceFrom(center) > corner.radius + EPSILON) return;
 
