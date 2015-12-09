@@ -146,14 +146,20 @@ void Map::update(const World& world) {
     for (unsigned long i = 0; i < width; i++) {
         for (unsigned long j = 0; j < height; j++) {
             auto tile = tiles[i][j];
-            int value = tile == UNKNOWN ? approximateUnknownTile(i, j, width, height) : getEdgesByTileType(tile);
             int previousValue = get(i, j);
-            if (tile != UNKNOWN && value != previousValue) {
-                set(i, j, value);
-                allTilesKnown = false;
+            if (tile == UNKNOWN) {
+                if (previousValue == static_cast<char>(-1)) {
+                    set(i, j, approximateUnknownTile(i, j, width, height));
+                }
+            } else {
+                int value = getEdgesByTileType(tile);
+                if (value != previousValue) {
+                    set(i, j, value);
+                }
             }
+
             hashCode = hashCode * 31 + get(i, j);
-            allTilesKnown &= get(i, j) != static_cast<char>(-1);
+            allTilesKnown &= tile != UNKNOWN;
         }
     }
 
