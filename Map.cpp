@@ -64,7 +64,7 @@ char approximateUnknownTile(int i, int j, int width, int height) {
     static const int dx[] = {1, 0, -1, 0};
     static const int dy[] = {0, 1, 0, -1};
 
-    char result = 0;
+    char result = static_cast<char>(16);
     for (int d = 0; d < 4; d++) {
         int x = i + dx[d], y = j + dy[d];
         if (0 <= x && x < width && 0 <= y && y < height) {
@@ -87,6 +87,10 @@ int Map::get(unsigned long x, unsigned long y) const {
 
 void Map::set(unsigned long x, unsigned long y, int value) {
     graph[x * height + y] = static_cast<char>(value);
+}
+
+bool Map::isApproximated(unsigned long x, unsigned long y) const {
+    return get(x, y) & 16;
 }
 
 #ifdef PRINT_MAP
@@ -118,8 +122,7 @@ bool deserializeMap(Map& map, const string& data) {
 
     for (unsigned long i = 0; i < n; i++) {
         for (unsigned long j = 0; j < m; j++) {
-            auto previous = map.get(i, j);
-            if (previous != static_cast<char>(-1) && previous != fromHex(data.at(i * m + j + 2))) return false;
+            if (!map.isApproximated(i, j) && map.get(i, j) != fromHex(data.at(i * m + j + 2))) return false;
         }
     }
 
@@ -148,7 +151,8 @@ void Map::update(const World& world) {
             auto tile = tiles[i][j];
             int previousValue = get(i, j);
             if (tile == UNKNOWN) {
-                if (previousValue == static_cast<char>(-1)) {
+                if (previousValue == -1) {
+                    allTilesKnown = false;
                     set(i, j, approximateUnknownTile(i, j, width, height));
                 }
             } else {
@@ -159,7 +163,6 @@ void Map::update(const World& world) {
             }
 
             hashCode = hashCode * 31 + get(i, j);
-            allTilesKnown &= tile != UNKNOWN;
         }
     }
 

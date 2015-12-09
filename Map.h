@@ -21,6 +21,8 @@ public:
     int get(unsigned long x, unsigned long y) const;
     void set(unsigned long x, unsigned long y, int value);
 
+    bool isApproximated(unsigned long x, unsigned long y) const;
+
     void update(const World& world);
 
 private:
