@@ -30,7 +30,7 @@ using namespace std;
 #endif
 
 const int NITRO_CHECK_PERIOD = 10;
-const int FIRE_CHECK_PERIOD = 8;
+const int FIRE_CHECK_PERIOD = 4;
 
 VisClient *vis = nullptr;
 
