@@ -60,7 +60,28 @@ char getEdgesByTileType(TileType type) {
     return 0;
 }
 
+char approximateUnknownTile(int i, int j, int width, int height) {
+    static const int dx[] = {1, 0, -1, 0};
+    static const int dy[] = {0, 1, 0, -1};
+
+    char result = 0;
+    for (int d = 0; d < 4; d++) {
+        int x = i + dx[d], y = j + dy[d];
+        if (0 <= x && x < width && 0 <= y && y < height) {
+            result |= (1 << d);
+        }
+    }
+
+    return result;
+}
+
+Map& Map::getMap() {
+    static Map *instance = new Map();
+    return *instance;
+}
+
 int Map::get(unsigned long x, unsigned long y) const {
+    // return x < width && y < height ? static_cast<int>(graph[x * height + y]) : 0;
     return static_cast<int>(graph[x * height + y]);
 }
 
@@ -125,7 +146,7 @@ void Map::update(const World& world) {
     for (unsigned long i = 0; i < width; i++) {
         for (unsigned long j = 0; j < height; j++) {
             auto tile = tiles[i][j];
-            int value = getEdgesByTileType(tile);
+            int value = tile == UNKNOWN ? approximateUnknownTile(i, j, width, height) : getEdgesByTileType(tile);
             int previousValue = get(i, j);
             if (tile != UNKNOWN && value != previousValue) {
                 set(i, j, value);
@@ -151,7 +172,7 @@ void Map::update(const World& world) {
     if (!allTilesKnown) {
         auto it = PRECALCULATED_MAPS.find(waypointsHash);
         if (it != PRECALCULATED_MAPS.end()) {
-            cout << "precalculated map hash " << it->first << " data " << it->second << endl;
+            // cout << "precalculated map hash " << it->first << " data " << it->second << endl;
             deserializeMap(*this, it->second);
         }
     }

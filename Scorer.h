@@ -12,7 +12,7 @@ class Track;
 
 struct Scorer {
     const State& startState;
-    const vector<Tile>& path;
+    vector<Tile> path;
 
     vector<Segment> pathSegment;
 

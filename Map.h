@@ -14,10 +14,7 @@ public:
     int hashCode;
     int waypointsHash;
 
-    static Map& getMap() {
-        static Map instance;
-        return instance;
-    }
+    static Map& getMap();
 
     // Each element is a bit mask of edges to (+1, 0) [bit #0], (0, +1), (-1, 0), (0, -1) [bit #3]
     // TODO: return 0 on out of bounds

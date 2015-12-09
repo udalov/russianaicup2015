@@ -8,15 +8,8 @@ class Const {
 public:
     Game game;
 
-    static Const& getInstance() {
-        static Const instance;
-        return instance;
-    }
-
-    static Game& getGame() {
-        return getInstance().game;
-    }
-
+    static Const& getInstance();
+    static Game& getGame();
 private:
     Const() { }
     Const(const Const& other) = delete;

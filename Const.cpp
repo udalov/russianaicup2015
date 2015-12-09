@@ -1,3 +1,10 @@
 #include "Const.h"
 
-void unusedConstCpp() {}
+Const& Const::getInstance() {
+    static Const instance;
+    return instance;
+}
+
+Game& Const::getGame() {
+    return getInstance().game;
+}
