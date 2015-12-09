@@ -273,6 +273,23 @@ bool shouldFire(const State& startState) {
     return false;
 }
 
+const Track& determineBestTrack(const vector<Track>& tracks) {
+    auto& firstTrack = tracks.front();
+    if (!Debug::isFastMode) return firstTrack;
+
+    const Track *firstForward = nullptr;
+    for (auto& track : tracks) {
+        auto& move = track.moves().front();
+        if (move.enginePower == 1.0 && !move.brake) {
+            firstForward = &track;
+            break;
+        }
+    }
+
+    // TODO: constant
+    return firstForward == nullptr || firstTrack.score() > 1.1 * firstForward->score() ? firstTrack : *firstForward;
+}
+
 // TODO: only use them if they are from the previous tick
 vector<Track> previousTracksAllTeam[2];
 
@@ -304,7 +321,7 @@ Go solve(const World& world, const Car& self, const vector<Tile>& path) {
 
     sort(tracks.rbegin(), tracks.rend());
 
-    auto& bestTrack = tracks.front();
+    auto& bestTrack = determineBestTrack(tracks);
     auto bestMove = bestTrack.moves().empty() ? Go() : bestTrack.moves().front();
 
 #ifdef VISUALIZE

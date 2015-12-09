@@ -6,4 +6,6 @@ struct Debug {
 
     // :(
     static bool isMap20;
+
+    static bool isFastMode;
 };
