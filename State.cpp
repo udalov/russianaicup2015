@@ -180,7 +180,7 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
 struct Walls {
     vector<Segment> segments;
     vector<Circle> corners;
-    int height;
+    unsigned long height;
 
     Walls(const vector<Segment>& segments, const vector<Circle>& corners) :
         segments(segments), corners(corners), height(Map::getMap().height) { }
@@ -200,8 +200,8 @@ Walls *Walls::instance = nullptr;
 
 Walls *computeWalls() {
     static Game& game = Const::getGame();
-    static const double mapWidth = Map::getMap().width;
-    static const double mapHeight = Map::getMap().height;
+    static const unsigned long mapWidth = Map::getMap().width;
+    static const unsigned long mapHeight = Map::getMap().height;
     static const double tileSize = game.getTrackTileSize();
 
     // To avoid driving right against walls and corners
@@ -374,8 +374,8 @@ void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses, const vect
     auto bonusEnd = upper_bound(bonusX.begin(), bonusX.end(), location.x + maximumRelevantDistance) - bonusX.begin();
 
     Point unused;
-    for (auto i = bonusBegin; i < bonusEnd; i++) {
-        auto& bonus = bonuses[i];
+    for (auto bonusIndex = bonusBegin; bonusIndex < bonusEnd; bonusIndex++) {
+        auto& bonus = bonuses[bonusIndex];
         // if (Debug::debug) cout << "  bonus at " << bonus.location.toString() << " " << bonus.isAlive << " distance " << location.distanceTo(bonus.location) << endl;
         if (!bonus.isAlive) continue;
         auto& bonusLocation = bonus.location;

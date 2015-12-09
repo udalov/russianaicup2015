@@ -255,7 +255,6 @@ bool shouldFire(const State& startState) {
 
     // for (auto& t : projectile) { vis->drawCircle(t, distance); }
 
-    CollisionInfo unused;
     for (auto& car : startState.original->getCars()) {
         if (car.isTeammate()) continue;
         if (car.isFinishedTrack()) continue;
