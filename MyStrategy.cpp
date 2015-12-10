@@ -251,26 +251,30 @@ bool shouldFire(const State& startState) {
     }
 
     auto distance = radius + game.getCarHeight() / 2;
-    auto enemyMove = Go(1.0, KEEP);
+    auto targetMove = Go(1.0, KEEP);
 
     // for (auto& t : projectile) { vis->drawCircle(t, distance); }
 
+    bool hitsEnemy = false;
+
     for (auto& car : startState.original->getCars()) {
-        if (car.isTeammate()) continue;
+        if (car.getId() == me.original->getId()) continue;
         if (car.isFinishedTrack()) continue;
         if (abs(car.getDurability()) < 1e-9) continue;
 
         auto state = State(startState.original, car.getId());
-        auto& enemy = state.me(); // Not me, but the enemy
+        auto& target = state.me();
         for (unsigned long tick = 0; tick < projectile.size(); tick++) {
-            state.apply(enemyMove);
-            if (tick > ticksCooldown && enemy.location.distanceTo(projectile[tick]) < distance) {
-                return true;
+            state.apply(targetMove);
+            if (tick > ticksCooldown && target.location.distanceTo(projectile[tick]) < distance) {
+                if (car.isTeammate()) return false;
+                hitsEnemy = true;
+                break;
             }
         }
     }
 
-    return false;
+    return hitsEnemy;
 }
 
 const Track& determineBestTrack(const vector<Track>& tracks) {
