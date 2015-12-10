@@ -267,10 +267,12 @@ bool shouldFire(const State& startState) {
         auto& target = state.me();
         for (unsigned long tick = 0; tick < projectile.size(); tick++) {
             state.apply(targetMove);
-            if (tick > ticksCooldown && target.location.distanceTo(projectile[tick]) < distance) {
+            if (target.location.distanceTo(projectile[tick]) < distance) {
                 if (car.isTeammate()) return false;
-                hitsEnemy = true;
-                break;
+                if (tick > ticksCooldown) {
+                    hitsEnemy = true;
+                    break;
+                }
             }
         }
     }
@@ -305,10 +307,12 @@ bool shouldSpillOil(const State& startState) {
         for (unsigned long tick = 0; tick < ticksLookahead; tick++) {
             state.apply(targetMove);
             for (auto& point : target.rectangle.points()) {
-                if (tick > ticksCooldown && point.distanceTo(location) < radius) {
+                if (point.distanceTo(location) < radius) {
                     if (car.isTeammate()) return false;
-                    enemyCaught = true;
-                    break;
+                    if (tick > ticksCooldown) {
+                        enemyCaught = true;
+                        break;
+                    }
                 }
             }
         }
