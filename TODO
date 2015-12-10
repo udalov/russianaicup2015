@@ -1,5 +1,0 @@
-major:
-- use Dijkstra with bonuses in path finder
-- do not use reverse mode if broken, until revived
-- being stuck near the wall: v1 on http://russianaicup.ru/game/view/263226
-  (decrease health fine)

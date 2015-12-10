@@ -394,21 +394,45 @@ bool safeModeForward(const State& startState, Go& result) {
     return false;
 }
 
-bool safeMode(const CarPosition& me, const World& world, Move& move) {
-    static int lastNonZeroSpeedTick[] = {
+struct SafeModeConfig {
+    vector<int> lastNonZeroSpeedTick;
+    vector<int> safeUntilTick;
+    vector<int> waitUntilTick;
+    vector<double> lastTickHealth;
+
+    SafeModeConfig() : lastNonZeroSpeedTick {
         Const::getGame().getInitialFreezeDurationTicks(),
         Const::getGame().getInitialFreezeDurationTicks()
-    };
-    static int safeUntilTick[] = { -1, -1 };
-    static int waitUntilTick[] = { -1, -1 };
+    }, safeUntilTick { -1, -1 }, waitUntilTick { -1, -1 }, lastTickHealth { 1.0, 1.0 } { }
+
+    int& getLastNonZeroSpeedTick(const Car *car) { return lastNonZeroSpeedTick.at(car->getTeammateIndex()); }
+    int& getSafeUntilTick(const Car *car) { return safeUntilTick.at(car->getTeammateIndex()); }
+    int& getWaitUntilTick(const Car *car) { return waitUntilTick.at(car->getTeammateIndex()); }
+    double& getLastTickHealth(const Car *car) { return lastTickHealth.at(car->getTeammateIndex()); }
+
+    static SafeModeConfig& getInstance() {
+        static SafeModeConfig instance;
+        return instance;
+    }
+};
+
+const double SAFE_MODE_MIN_SPEED = 1.0;
+const int SAFE_MODE_TOLERANCE = 20;
+const int SAFE_MODE_DURATION = 120;
+const int SAFE_MODE_WAIT = 60;
+
+bool safeMode(const CarPosition& me, const World& world, Move& move) {
+    auto& config = SafeModeConfig::getInstance();
+    int& lastNonZeroSpeedTick = config.getLastNonZeroSpeedTick(me.original);
+    int& safeUntilTick = config.getSafeUntilTick(me.original);
+    int& waitUntilTick = config.getWaitUntilTick(me.original);
 
     auto tick = world.getTick();
-    auto nonZeroSpeed = abs(me.velocity.length()) > 1.0;
-    auto index = me.original->getTeammateIndex();
+    auto nonZeroSpeed = abs(me.velocity.length()) > SAFE_MODE_MIN_SPEED;
 
-    // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick[index] << " safe-until " << safeUntilTick[index] << " wait-until " << waitUntilTick[index] << " non-zero " << nonZeroSpeed << endl;
+    // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick << " safe-until " << safeUntilTick << " wait-until " << waitUntilTick << " non-zero " << nonZeroSpeed << endl;
 
-    if (tick <= safeUntilTick[index]) {
+    if (tick <= safeUntilTick) {
         /*
         Go forward;
         if (safeModeForward(State(world, me.original->getTeammateIndex()), forward)) {
@@ -421,19 +445,22 @@ bool safeMode(const CarPosition& me, const World& world, Move& move) {
         if (me.enginePower > 0.0) {
             move.setBrake(true);
         }
+#ifdef VISUALIZE
+        cout << "tick " << world.getTick() << " safe-mode " << me.toString() << endl;
+#endif
         return true;
     }
 
-    if (nonZeroSpeed || tick <= safeUntilTick[index] || tick <= waitUntilTick[index]) {
-        lastNonZeroSpeedTick[index] = tick;
+    if (nonZeroSpeed || tick <= safeUntilTick || tick <= waitUntilTick) {
+        lastNonZeroSpeedTick = tick;
     }
     
-    if (tick <= waitUntilTick[index] || tick - lastNonZeroSpeedTick[index] < 20) {
+    if (tick <= waitUntilTick || tick - lastNonZeroSpeedTick < SAFE_MODE_TOLERANCE) {
         return false;
     }
 
-    safeUntilTick[index] = tick + 120;
-    waitUntilTick[index] = tick + 180;
+    safeUntilTick = tick + SAFE_MODE_DURATION;
+    waitUntilTick = safeUntilTick + SAFE_MODE_WAIT;
 
     /*
     Go forward;
@@ -466,6 +493,14 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
     }
 
     Debug::tick = world.getTick();
+
+    auto& safeModeConfig = SafeModeConfig::getInstance();
+    auto& lastTickHealth = safeModeConfig.getLastTickHealth(&self);
+    if (lastTickHealth < 1e-9 && self.getDurability() > lastTickHealth) {
+        safeModeConfig.getSafeUntilTick(&self) = world.getTick() - 1;
+        safeModeConfig.getWaitUntilTick(&self) = world.getTick() + SAFE_MODE_WAIT;
+    }
+    lastTickHealth = self.getDurability();
 
     auto& map = Map::getMap();
     map.update(world);
