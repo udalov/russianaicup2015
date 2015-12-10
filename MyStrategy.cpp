@@ -404,7 +404,7 @@ Go solve(const World& world, const Car& self, const vector<Tile>& path) {
     return bestMove;
 }
 
-vector<Tile> computePath(const Car& self, const World& world, const Game& game) {
+vector<Tile> computePath(const Car& self, const World& world) {
     auto& waypoints = world.getWaypoints();
     int i = self.getNextWaypointIndex();
     DirectedTile start = CarPosition(&world, &self).directedTile();
@@ -425,39 +425,29 @@ vector<Tile> computePath(const Car& self, const World& world, const Game& game) 
     return result;
 }
 
-bool safeModeForward(const State& startState, Go& result) {
-    // Try going forward for the next epsilon ticks and see if it helps
-    vector<Track> tracks;
-    for (auto wheel : { TURN_LEFT, KEEP, TURN_RIGHT }) {
-        tracks.emplace_back(vector<Go>(25, Go(1.0, wheel)));
-    }
-    for (auto& track : tracks) {
-        auto state = State(startState);
-        for (auto& move : track.moves()) {
-            state.apply(move);
-        }
-        if (state.me().velocity.length() > 1.0) {
-            result = track.moves().front();
-            return true;
-        }
-    }
-    return false;
-}
-
 struct SafeModeConfig {
     vector<int> lastNonZeroSpeedTick;
     vector<int> safeUntilTick;
     vector<int> waitUntilTick;
+    vector<int> lastSafeModeAppliedTick;
+    vector<double> safeModeEnginePower;
     vector<double> lastTickHealth;
 
     SafeModeConfig() : lastNonZeroSpeedTick {
         Const::getGame().getInitialFreezeDurationTicks(),
         Const::getGame().getInitialFreezeDurationTicks()
-    }, safeUntilTick { -1, -1 }, waitUntilTick { -1, -1 }, lastTickHealth { 1.0, 1.0 } { }
+    },
+        safeUntilTick { -1, -1 },
+        waitUntilTick { -1, -1 },
+        lastSafeModeAppliedTick { -1, -1 },
+        safeModeEnginePower { 1.0, 1.0 },
+        lastTickHealth { 1.0, 1.0 } { }
 
     int& getLastNonZeroSpeedTick(const Car *car) { return lastNonZeroSpeedTick.at(car->getTeammateIndex()); }
     int& getSafeUntilTick(const Car *car) { return safeUntilTick.at(car->getTeammateIndex()); }
     int& getWaitUntilTick(const Car *car) { return waitUntilTick.at(car->getTeammateIndex()); }
+    int& getLastSafeModeAppliedTick(const Car *car) { return lastSafeModeAppliedTick.at(car->getTeammateIndex()); }
+    double& getSafeModeEnginePower(const Car *car) { return safeModeEnginePower.at(car->getTeammateIndex()); }
     double& getLastTickHealth(const Car *car) { return lastTickHealth.at(car->getTeammateIndex()); }
 
     static SafeModeConfig& getInstance() {
@@ -467,15 +457,32 @@ struct SafeModeConfig {
 };
 
 const double SAFE_MODE_MIN_SPEED = 1.0;
-const int SAFE_MODE_TOLERANCE = 20;
+const int SAFE_MODE_TOLERANCE = 10;
 const int SAFE_MODE_DURATION = 120;
 const int SAFE_MODE_WAIT = 60;
+
+bool pointlessSafeMove(const CarPosition& me, const World& world, Go move, int ticks) {
+    auto state = State(&world, me.original->getId());
+    for (int i = 0; i < ticks; i++) {
+        move.brake = state.me().enginePower * move.enginePower < 0.0;
+        state.apply(move);
+    }
+    // TODO
+    /*
+    cout << "### before " << me.toString() << endl;
+    cout << "### after " << state.me().toString() << endl;
+    cout << "### distance " << state.me().location.distanceTo(me.location) << endl;
+    */
+    return state.me().location.distanceTo(me.location) < Const::getGame().getCarHeight() / 2;
+}
 
 bool safeMode(const CarPosition& me, const World& world, Move& move) {
     auto& config = SafeModeConfig::getInstance();
     int& lastNonZeroSpeedTick = config.getLastNonZeroSpeedTick(me.original);
     int& safeUntilTick = config.getSafeUntilTick(me.original);
     int& waitUntilTick = config.getWaitUntilTick(me.original);
+    int& lastSafeModeAppliedTick = config.getLastSafeModeAppliedTick(me.original);
+    double& safeModeEnginePower = config.getSafeModeEnginePower(me.original);
 
     auto tick = world.getTick();
     auto nonZeroSpeed = abs(me.velocity.length()) > SAFE_MODE_MIN_SPEED;
@@ -483,21 +490,25 @@ bool safeMode(const CarPosition& me, const World& world, Move& move) {
     // cout << "tick " << tick << " last-non-zero " << lastNonZeroSpeedTick << " safe-until " << safeUntilTick << " wait-until " << waitUntilTick << " non-zero " << nonZeroSpeed << endl;
 
     if (tick <= safeUntilTick) {
+        lastSafeModeAppliedTick = tick;
+
+        auto path = computePath(*me.original, world);
+        auto desiredDirection = Vec(path[0].toPoint(), path[1].toPoint());
+        auto go = Go(safeModeEnginePower, me.direction().angleTo(desiredDirection) < 0.0 ? TURN_LEFT : TURN_RIGHT);
         /*
-        Go forward;
-        if (safeModeForward(State(world, me.original->getTeammateIndex()), forward)) {
-            forward.applyTo(*me.original, move);
-            return true;
+        // TODO: fix and enable
+        if (pointlessSafeMove(me, world, go, safeUntilTick - tick)) {
+            go.enginePower = 1.0;
         }
         */
-        move.setEnginePower(-1.0);
-        move.setWheelTurn(0.0);
-        if (me.enginePower > 0.0) {
-            move.setBrake(true);
+        if (go.enginePower > 0.0) {
+            go.wheelTurn = go.wheelTurn == TURN_LEFT ? TURN_RIGHT : TURN_LEFT;
         }
+        go.brake = me.enginePower * go.enginePower < 0.0;
 #ifdef VISUALIZE
-        cout << "tick " << world.getTick() << " safe-mode " << me.toString() << endl;
+        cout << "tick " << world.getTick() << " safe-mode " << go.toString() << " " << me.toString() << endl;
 #endif
+        go.applyTo(*me.original, move);
         return true;
     }
 
@@ -511,14 +522,12 @@ bool safeMode(const CarPosition& me, const World& world, Move& move) {
 
     safeUntilTick = tick + SAFE_MODE_DURATION;
     waitUntilTick = safeUntilTick + SAFE_MODE_WAIT;
+    safeModeEnginePower = -safeModeEnginePower;
 
-    /*
-    Go forward;
-    if (safeModeForward(me.original->getTeammateIndex()), forward)) {
-        forward.applyTo(*me.original, move);
-        return true;
+    if (tick - lastSafeModeAppliedTick > SAFE_MODE_WAIT * 3) {
+        // If the last safe mode was applied a long time ago, we're in a new accident and should try go backwards first
+        safeModeEnginePower = -1.0;
     }
-    */
 
     return false;
 }
@@ -571,7 +580,7 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
         return;
     }
 
-    auto path = computePath(self, world, game);
+    auto path = computePath(self, world);
 
     Go solution = solve(world, self, path);
     solution.applyTo(self, move);
