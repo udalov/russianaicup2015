@@ -186,5 +186,6 @@ void Map::update(const World& world) {
         }
     }
 
+    Debug::isMap11 |= waypointsHash == -1743023107;
     Debug::isMap20 |= waypointsHash == 1705052841;
 }
