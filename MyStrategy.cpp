@@ -25,12 +25,13 @@ using namespace std;
 // #define DEBUG_PHYSICS_PREDICTION
 
 #ifndef ONLINE_JUDGE
-#define VISUALIZE
-#define DEBUG_OUTPUT
+// #define VISUALIZE
+// #define DEBUG_OUTPUT
 #endif
 
 const int NITRO_CHECK_PERIOD = 10;
 const int FIRE_CHECK_PERIOD = 4;
+const int OIL_CHECK_PERIOD = 10;
 
 VisClient *vis = nullptr;
 
@@ -277,6 +278,45 @@ bool shouldFire(const State& startState) {
     return hitsEnemy;
 }
 
+bool shouldSpillOil(const State& startState) {
+    static auto& game = Const::getGame();
+    static const double radius = game.getOilSlickRadius() * 0.8;
+    static const double shift = game.getCarWidth() / 2 + game.getOilSlickInitialRange() + game.getOilSlickRadius();
+
+    const unsigned long ticksLookahead = 70;
+    const unsigned long ticksCooldown = 20;
+
+    auto& me = startState.me();
+
+    auto location = me.location - (me.direction() * shift);
+    auto targetMove = Go(1.0, KEEP);
+
+    // vis->drawCircle(location, radius);
+
+    bool enemyCaught = false;
+
+    for (auto& car : startState.original->getCars()) {
+        if (car.getId() == me.original->getId()) continue;
+        if (car.isFinishedTrack()) continue;
+        if (abs(car.getDurability()) < 1e-9) continue;
+
+        auto state = State(startState.original, car.getId());
+        auto& target = state.me();
+        for (unsigned long tick = 0; tick < ticksLookahead; tick++) {
+            state.apply(targetMove);
+            for (auto& point : target.rectangle.points()) {
+                if (tick > ticksCooldown && point.distanceTo(location) < radius) {
+                    if (car.isTeammate()) return false;
+                    enemyCaught = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    return enemyCaught;
+}
+
 const Track& determineBestTrack(const vector<Track>& tracks) {
     auto& firstTrack = tracks.front();
     if (!Debug::isFastMode) return firstTrack;
@@ -352,6 +392,12 @@ Go solve(const World& world, const Car& self, const vector<Tile>& path) {
     if (!(world.getTick() % FIRE_CHECK_PERIOD) && startState.me().projectiles > 0 && startState.me().original->getRemainingProjectileCooldownTicks() == 0) {
         if (shouldFire(startState)) {
             bestMove.throwProjectile = true;
+        }
+    }
+
+    if (!(world.getTick() % OIL_CHECK_PERIOD) && startState.me().oilCanisters > 0 && startState.me().original->getRemainingOilCooldownTicks() == 0) {
+        if (shouldSpillOil(startState)) {
+            bestMove.spillOil = true;
         }
     }
 
