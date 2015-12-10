@@ -57,9 +57,9 @@ double Scorer::scoreTrack(const Track& track) const {
         state.apply(moves[i]);
 
         // TODO: constants
-        const int firstScoreTurn = 40;
+        const int firstScoreTurn = 39;
         const int stepScoreTurn = 5;
-        if (i >= firstScoreTurn && !(i % stepScoreTurn)) {
+        if (i >= firstScoreTurn && !((i - firstScoreTurn) % stepScoreTurn)) {
             double stateScore = scoreState(state);
             double damp = ((i - firstScoreTurn + stepScoreTurn) / stepScoreTurn);
             if (damp > 5) damp = 5;

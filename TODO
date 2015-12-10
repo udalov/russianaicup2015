@@ -1,0 +1,1 @@
+- before applying another safe mode turn, check if the normal solution would work fine (would reach positive speed) and prevent safe mode
