@@ -26,7 +26,7 @@ using namespace std;
 
 #ifndef ONLINE_JUDGE
 // #define VISUALIZE
-// #define DEBUG_OUTPUT
+#define DEBUG_OUTPUT
 #endif
 
 const int NITRO_CHECK_PERIOD = 10;
@@ -372,7 +372,7 @@ Go solve(const World& world, const Car& self, const vector<Tile>& path) {
     auto& bestTrack = determineBestTrack(tracks);
     auto bestMove = bestTrack.moves().empty() ? Go() : bestTrack.moves().front();
 
-#ifdef VISUALIZE
+#ifdef DEBUG_OUTPUT
     {
         // Debug::debug = true;
         auto state = State(startState);
@@ -509,7 +509,7 @@ bool safeMode(const CarPosition& me, const World& world, Move& move) {
             go.wheelTurn = go.wheelTurn == TURN_LEFT ? TURN_RIGHT : TURN_LEFT;
         }
         go.brake = me.enginePower * go.enginePower < 0.0;
-#ifdef VISUALIZE
+#ifdef DEBUG_OUTPUT
         cout << "tick " << world.getTick() << " safe-mode " << go.toString() << " " << me.toString() << endl;
 #endif
         go.applyTo(*me.original, move);
