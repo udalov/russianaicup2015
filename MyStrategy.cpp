@@ -430,33 +430,24 @@ vector<Tile> computePath(const Car& self, const World& world) {
 }
 
 struct SafeModeConfig {
-    vector<int> lastNonZeroSpeedTick;
-    vector<int> safeUntilTick;
-    vector<int> waitUntilTick;
-    vector<int> lastSafeModeAppliedTick;
-    vector<double> safeModeEnginePower;
-    vector<double> lastTickHealth;
+    int lastNonZeroSpeedTick;
+    int safeUntilTick;
+    int waitUntilTick;
+    int lastSafeModeAppliedTick;
+    double safeModeEnginePower;
+    double lastTickHealth;
 
-    SafeModeConfig() : lastNonZeroSpeedTick {
-        Const::getGame().getInitialFreezeDurationTicks(),
-        Const::getGame().getInitialFreezeDurationTicks()
-    },
-        safeUntilTick { -1, -1 },
-        waitUntilTick { -1, -1 },
-        lastSafeModeAppliedTick { -1, -1 },
-        safeModeEnginePower { 1.0, 1.0 },
-        lastTickHealth { 1.0, 1.0 } { }
+    SafeModeConfig() :
+        lastNonZeroSpeedTick(Const::getGame().getInitialFreezeDurationTicks()),
+        safeUntilTick(-1),
+        waitUntilTick(-1),
+        lastSafeModeAppliedTick(-1),
+        safeModeEnginePower(1.0),
+        lastTickHealth(1.0) { }
 
-    int& getLastNonZeroSpeedTick(const Car *car) { return lastNonZeroSpeedTick.at(car->getTeammateIndex()); }
-    int& getSafeUntilTick(const Car *car) { return safeUntilTick.at(car->getTeammateIndex()); }
-    int& getWaitUntilTick(const Car *car) { return waitUntilTick.at(car->getTeammateIndex()); }
-    int& getLastSafeModeAppliedTick(const Car *car) { return lastSafeModeAppliedTick.at(car->getTeammateIndex()); }
-    double& getSafeModeEnginePower(const Car *car) { return safeModeEnginePower.at(car->getTeammateIndex()); }
-    double& getLastTickHealth(const Car *car) { return lastTickHealth.at(car->getTeammateIndex()); }
-
-    static SafeModeConfig& getInstance() {
-        static SafeModeConfig instance;
-        return instance;
+    static SafeModeConfig& getInstance(const Car *car) {
+        static SafeModeConfig instances[] = { SafeModeConfig(), SafeModeConfig() };
+        return instances[car->getTeammateIndex()];
     }
 };
 
@@ -481,12 +472,12 @@ bool pointlessSafeMove(const CarPosition& me, const World& world, Go move, int t
 }
 
 bool safeMode(const CarPosition& me, const World& world, Move& move) {
-    auto& config = SafeModeConfig::getInstance();
-    int& lastNonZeroSpeedTick = config.getLastNonZeroSpeedTick(me.original);
-    int& safeUntilTick = config.getSafeUntilTick(me.original);
-    int& waitUntilTick = config.getWaitUntilTick(me.original);
-    int& lastSafeModeAppliedTick = config.getLastSafeModeAppliedTick(me.original);
-    double& safeModeEnginePower = config.getSafeModeEnginePower(me.original);
+    auto& config = SafeModeConfig::getInstance(me.original);
+    int& lastNonZeroSpeedTick = config.lastNonZeroSpeedTick;
+    int& safeUntilTick = config.safeUntilTick;
+    int& waitUntilTick = config.waitUntilTick;
+    int& lastSafeModeAppliedTick = config.lastSafeModeAppliedTick;
+    double& safeModeEnginePower = config.safeModeEnginePower;
 
     auto tick = world.getTick();
     auto nonZeroSpeed = abs(me.velocity.length()) > SAFE_MODE_MIN_SPEED;
@@ -557,11 +548,12 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 
     Debug::tick = world.getTick();
 
-    auto& safeModeConfig = SafeModeConfig::getInstance();
-    auto& lastTickHealth = safeModeConfig.getLastTickHealth(&self);
-    if (lastTickHealth < 1e-9 && self.getDurability() > lastTickHealth) {
-        safeModeConfig.getSafeUntilTick(&self) = world.getTick() - 1;
-        safeModeConfig.getWaitUntilTick(&self) = world.getTick() + SAFE_MODE_WAIT;
+    auto& safeModeConfig = SafeModeConfig::getInstance(&self);
+    auto& lastTickHealth = safeModeConfig.lastTickHealth;
+    if (safeModeConfig.lastTickHealth < 1e-9 && self.getDurability() > safeModeConfig.lastTickHealth) {
+        safeModeConfig.safeUntilTick = -1;
+        safeModeConfig.lastSafeModeAppliedTick = -1;
+        safeModeConfig.waitUntilTick = world.getTick() + SAFE_MODE_WAIT;
     }
     lastTickHealth = self.getDurability();
 
