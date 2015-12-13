@@ -12,7 +12,7 @@ struct VisClient {
     bool valid;
     CActiveSocket socket;
 
-    VisClient(int port);
+    explicit VisClient(int port);
 
     void send(const string& message);
 

@@ -39,7 +39,7 @@ struct CarPosition {
     int medicines;
     int pureScore;
 
-    CarPosition(const World *world, const Car *car);
+    explicit CarPosition(const World *world, const Car *car);
 
     Vec direction() const { return Vec(angle); }
 
@@ -60,7 +60,7 @@ struct BonusPosition {
     Rect innerRectangle;
     bool isAlive;
 
-    BonusPosition(const Bonus *bonus);
+    explicit BonusPosition(const Bonus *bonus);
 };
 
 struct State {
@@ -69,7 +69,7 @@ struct State {
     vector<BonusPosition> bonuses;
     vector<double> bonusX; // X coords of bonuses
 
-    State(const World *world, long long id);
+    explicit State(const World *world, long long id);
 
     const CarPosition& me() const { return car; }
 

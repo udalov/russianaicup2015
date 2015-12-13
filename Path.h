@@ -15,8 +15,8 @@ struct Tile {
     int y;
 
     Tile(): x(), y() { }
-    Tile(int x, int y): x(x), y(y) { }
-    Tile(const Point& point);
+    explicit Tile(int x, int y): x(x), y(y) { }
+    explicit Tile(const Point& point);
 
     Tile *operator=(const Tile& other);
 
@@ -35,7 +35,7 @@ struct DirectedTile {
     Tile tile;
     int direction; // 0..7
 
-    DirectedTile(const Tile& tile, int direction): tile(tile), direction(direction) { }
+    explicit DirectedTile(const Tile& tile, int direction): tile(tile), direction(direction) { }
 
     bool operator==(const DirectedTile& other) const;
 

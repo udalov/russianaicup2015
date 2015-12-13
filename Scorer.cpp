@@ -23,8 +23,8 @@ Scorer::Scorer(const State& startState, const vector<Tile>& path, VisClient *vis
     }
 
     vis->drawLine(pathSegment[0].p1, pathSegment[0].p2);
-    vis->drawLine(pathSegment[0].p1 - 1, pathSegment[0].p2 - 1);
-    vis->drawLine(pathSegment[0].p1 + 1, pathSegment[0].p2 + 1);
+    vis->drawLine(pathSegment[0].p1 - Vec(1.0, 1.0), pathSegment[0].p2 - Vec(1.0, 1.0));
+    vis->drawLine(pathSegment[0].p1 + Vec(1.0, 1.0), pathSegment[0].p2 + Vec(1.0, 1.0));
     vis->drawLine(pathSegment[1].p1, pathSegment[1].p2);
 }
 

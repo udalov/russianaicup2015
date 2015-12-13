@@ -16,7 +16,7 @@ struct Scorer {
 
     vector<Segment> pathSegment;
 
-    Scorer(const State& startState, const vector<Tile>& path, VisClient *vis);
+    explicit Scorer(const State& startState, const vector<Tile>& path, VisClient *vis);
 
     double scoreTrack(const Track& track) const;
     double scoreState(const State& state, bool debug = false) const;

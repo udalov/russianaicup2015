@@ -2,5 +2,4 @@
 - bumperCenter -> location
 
 better C++:
-- explicit constructors
 - operator<< instead of toString()
