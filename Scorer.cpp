@@ -18,7 +18,7 @@ Segment segmentBetweenTiles(const Tile& tile1, const Tile& tile2) {
 }
 
 Scorer::Scorer(const State& startState, const vector<Tile>& path, VisClient *vis) : startState(startState), path(path) {
-    for (unsigned long i = 0, size = path.size(); i < size - 1; i++) {
+    for (size_t i = 0, size = path.size(); i < size - 1; i++) {
         pathSegment.push_back(segmentBetweenTiles(path[i], path[i + 1]));
     }
 
@@ -33,7 +33,7 @@ double Scorer::scoreTrack(const Track& track) const {
 
     auto state = State(startState);
     auto& moves = track.moves();
-    for (unsigned long i = 0, size = moves.size(); i < size; i++) {
+    for (size_t i = 0, size = moves.size(); i < size; i++) {
         state.apply(moves[i]);
 
         // TODO: constants
@@ -56,8 +56,8 @@ double Scorer::scoreState(const State& state, bool debug) const {
     auto location = me.bumperCenter();
 
     // TODO: store waypoint index in CarPosition and find shortest path here
-    unsigned long startSeg = find(path.begin(), path.end(), startState.me().tile()) - path.begin();
-    unsigned long nextSeg = find(path.begin() + startSeg, path.end(), me.tile()) - path.begin();
+    size_t startSeg = find(path.begin(), path.end(), startState.me().tile()) - path.begin();
+    size_t nextSeg = find(path.begin() + startSeg, path.end(), me.tile()) - path.begin();
     if (nextSeg == path.size() || nextSeg - startSeg >= (Debug::isMap11 ? 5 : 7)) return -1e15; // TODO (!)
     nextSeg++;
 

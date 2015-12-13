@@ -8,7 +8,7 @@ using namespace std;
 
 void writeBytes(CActiveSocket& socket, const vector<char>& bytes) {
     auto byteCount = bytes.size();
-    unsigned int offset = 0;
+    size_t offset = 0;
     int sentByteCount;
 
     while (offset < byteCount && (sentByteCount = socket.Send((uint8*) &bytes[offset], byteCount - offset)) > 0) {
@@ -67,7 +67,7 @@ void VisClient::drawLine(const Point& first, const Point& second) {
 
 void VisClient::drawPoly(const vector<Point>& points) {
     if (!valid) return;
-    for (unsigned long i = 0; i < points.size(); i++) {
+    for (size_t i = 0; i < points.size(); i++) {
         drawLine(points[i], points[i + 1 == points.size() ? 0 : i + 1]);
     }
 }

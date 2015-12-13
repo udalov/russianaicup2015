@@ -46,7 +46,7 @@ DirectedTile DirectedTile::turnRight() const {
     return DirectedTile(tile, direction == 7 ? 0 : direction + 1);
 }
 
-unsigned int Tile::manhattanDistanceTo(const Tile& other) const {
+size_t Tile::manhattanDistanceTo(const Tile& other) const {
     return abs(x - other.x) + abs(y - other.y);
 }
 
@@ -87,7 +87,7 @@ vector<DirectedTile> bestPath(const DirectedTile& start, const Tile& finish) {
     vector<DirectedTile> q;
     unordered_map<DirectedTile, DirectedTile> prev;
     q.push_back(start);
-    unsigned long qb = 0;
+    size_t qb = 0;
     while (qb < q.size()) {
         auto v = q[qb++];
         int xx = v.tile.x, yy = v.tile.y;

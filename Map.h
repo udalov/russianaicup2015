@@ -9,8 +9,8 @@ using std::vector;
 
 class Map {
 public:
-    unsigned long width;
-    unsigned long height;
+    size_t width;
+    size_t height;
     int hashCode;
     int waypointsHash;
 
@@ -18,10 +18,10 @@ public:
 
     // Each element is a bit mask of edges to (+1, 0) [bit #0], (0, +1), (-1, 0), (0, -1) [bit #3]
     // TODO: return 0 on out of bounds
-    int get(unsigned long x, unsigned long y) const;
-    void set(unsigned long x, unsigned long y, int value);
+    int get(size_t x, size_t y) const;
+    void set(size_t x, size_t y, int value);
 
-    bool isApproximated(unsigned long x, unsigned long y) const;
+    bool isApproximated(size_t x, size_t y) const;
 
     void update(const World& world);
 

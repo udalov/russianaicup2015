@@ -80,16 +80,16 @@ Map& Map::getMap() {
     return *instance;
 }
 
-int Map::get(unsigned long x, unsigned long y) const {
+int Map::get(size_t x, size_t y) const {
     // return x < width && y < height ? static_cast<int>(graph[x * height + y]) : 0;
     return static_cast<int>(graph[x * height + y]);
 }
 
-void Map::set(unsigned long x, unsigned long y, int value) {
+void Map::set(size_t x, size_t y, int value) {
     graph[x * height + y] = static_cast<char>(value);
 }
 
-bool Map::isApproximated(unsigned long x, unsigned long y) const {
+bool Map::isApproximated(size_t x, size_t y) const {
     return get(x, y) & 16;
 }
 
@@ -97,8 +97,8 @@ bool Map::isApproximated(unsigned long x, unsigned long y) const {
 string serializeMap(const Map& map) {
     stringstream ss;
     ss << hex << (map.width - 1) << (map.height - 1);
-    for (unsigned long i = 0; i < map.width; i++) {
-        for (unsigned long j = 0; j < map.height; j++) {
+    for (size_t i = 0; i < map.width; i++) {
+        for (size_t j = 0; j < map.height; j++) {
             ss << map.get(i, j);
         }
     }
@@ -115,19 +115,19 @@ int fromHex(char c) {
 }
 
 bool deserializeMap(Map& map, const string& data) {
-    unsigned long n = map.width;
-    unsigned long m = map.height;
+    size_t n = map.width;
+    size_t m = map.height;
     if (fromHex(data[0]) != static_cast<int>(n - 1) ||
         fromHex(data[1]) != static_cast<int>(m - 1)) return false;
 
-    for (unsigned long i = 0; i < n; i++) {
-        for (unsigned long j = 0; j < m; j++) {
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < m; j++) {
             if (!map.isApproximated(i, j) && map.get(i, j) != fromHex(data.at(i * m + j + 2))) return false;
         }
     }
 
-    for (unsigned long i = 0; i < n; i++) {
-        for (unsigned long j = 0; j < m; j++) {
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < m; j++) {
             map.set(i, j, fromHex(data.at(i * m + j + 2)));
         }
     }
@@ -146,8 +146,8 @@ void Map::update(const World& world) {
 
     bool allTilesKnown = true;
     hashCode = 0;
-    for (unsigned long i = 0; i < width; i++) {
-        for (unsigned long j = 0; j < height; j++) {
+    for (size_t i = 0; i < width; i++) {
+        for (size_t j = 0; j < height; j++) {
             auto tile = tiles[i][j];
             int previousValue = get(i, j);
             if (tile == UNKNOWN) {

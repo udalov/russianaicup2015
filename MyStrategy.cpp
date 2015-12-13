@@ -180,8 +180,8 @@ void drawMap() {
     const int dx[] = {1, 0, -1, 0};
     const int dy[] = {0, 1, 0, -1};
     const double s = 200.0;
-    for (unsigned long i = 0; i < map.width; i++) {
-        for (unsigned long j = 0; j < map.height; j++) {
+    for (size_t i = 0; i < map.width; i++) {
+        for (size_t j = 0; j < map.height; j++) {
             double x = i * s + s/2;
             double y = j * s + s/2;
             for (int d = 0; d < 4; d++) {
@@ -230,8 +230,8 @@ bool intersectsWallsHeuristic(const Point& point, double radius) {
 bool shouldFire(const State& startState) {
     static auto& game = Const::getGame();
 
-    const unsigned long ticksLookahead = 30;
-    const unsigned long ticksCooldown = 4;
+    const size_t ticksLookahead = 30;
+    const size_t ticksCooldown = 4;
 
     auto& me = startState.me();
 
@@ -241,7 +241,7 @@ bool shouldFire(const State& startState) {
 
     vector<Point> projectile;
     auto location = me.location;
-    for (unsigned long tick = 0; tick < ticksLookahead; tick++) {
+    for (size_t tick = 0; tick < ticksLookahead; tick++) {
         location += velocity;
         projectile.push_back(location);
         if (!me.isBuggy() && intersectsWallsHeuristic(location, radius)) {
@@ -265,7 +265,7 @@ bool shouldFire(const State& startState) {
 
         auto state = State(startState.original, car.getId());
         auto& target = state.me();
-        for (unsigned long tick = 0; tick < projectile.size(); tick++) {
+        for (size_t tick = 0; tick < projectile.size(); tick++) {
             state.apply(targetMove);
             if (target.location.distanceTo(projectile[tick]) < distance) {
                 if (car.isTeammate()) return false;
@@ -285,8 +285,8 @@ bool shouldSpillOil(const State& startState) {
     static const double radius = game.getOilSlickRadius() * 0.8;
     static const double shift = game.getCarWidth() / 2 + game.getOilSlickInitialRange() + game.getOilSlickRadius();
 
-    const unsigned long ticksLookahead = 70;
-    const unsigned long ticksCooldown = 20;
+    const size_t ticksLookahead = 70;
+    const size_t ticksCooldown = 20;
 
     auto& me = startState.me();
 
@@ -304,7 +304,7 @@ bool shouldSpillOil(const State& startState) {
 
         auto state = State(startState.original, car.getId());
         auto& target = state.me();
-        for (unsigned long tick = 0; tick < ticksLookahead; tick++) {
+        for (size_t tick = 0; tick < ticksLookahead; tick++) {
             state.apply(targetMove);
             for (auto& point : target.rectangle.points()) {
                 if (point.distanceTo(location) < radius) {
@@ -353,7 +353,7 @@ Go solve(const World& world, const Car& self, const vector<Tile>& path) {
     if (tracks.empty()) return Go();
 
     if (!(world.getTick() % NITRO_CHECK_PERIOD) && startState.me().nitroCharges > 0 && startState.me().nitroCooldown == 0) {
-        for (unsigned long i = 0, size = tracks.size(); i < size; i++) {
+        for (size_t i = 0, size = tracks.size(); i < size; i++) {
             auto copy = Track(tracks[i]);
             if (copy.moves().empty()) continue;
             copy.moves().front().useNitro = true;

@@ -180,16 +180,16 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
 struct Walls {
     vector<Segment> segments;
     vector<Circle> corners;
-    unsigned long height;
+    size_t height;
 
     Walls(const vector<Segment>& segments, const vector<Circle>& corners) :
         segments(segments), corners(corners), height(Map::getMap().height) { }
 
-    const Segment& segment(unsigned long tx, unsigned long ty, int d) const {
+    const Segment& segment(size_t tx, size_t ty, int d) const {
         return segments[((tx * height) + ty) * 4 + d];
     }
 
-    const Circle& corner(unsigned long tx, unsigned long ty, int d) const {
+    const Circle& corner(size_t tx, size_t ty, int d) const {
         return corners[((tx * height) + ty) * 4 + d];
     }
 
@@ -200,8 +200,8 @@ Walls *Walls::instance = nullptr;
 
 Walls *computeWalls() {
     static Game& game = Const::getGame();
-    static const unsigned long mapWidth = Map::getMap().width;
-    static const unsigned long mapHeight = Map::getMap().height;
+    static const size_t mapWidth = Map::getMap().width;
+    static const size_t mapHeight = Map::getMap().height;
     static const double tileSize = game.getTrackTileSize();
 
     // To avoid driving right against walls and corners
@@ -214,8 +214,8 @@ Walls *computeWalls() {
     static const int dx[] = {1, 0, -1, 0};
     static const int dy[] = {0, 1, 0, -1};
 
-    for (unsigned long tx = 0; tx < mapWidth; tx++) {
-        for (unsigned long ty = 0; ty < mapHeight; ty++) {
+    for (size_t tx = 0; tx < mapWidth; tx++) {
+        for (size_t ty = 0; ty < mapHeight; ty++) {
             for (int d = 0; d < 4; d++) {
                 auto p1 = Point(
                         (tx + max(dx[d] + dy[d], 0)) * tileSize - dx[d] * segmentMargin,
@@ -296,9 +296,7 @@ void collideCarWithCornerWall(CarPosition& car, const Circle& corner) {
     }
 }
 
-void determineTileBounds(
-        const Rect& rectangle, unsigned long& txBegin, unsigned long& txEnd, unsigned long& tyBegin, unsigned long& tyEnd
-) {
+void determineTileBounds(const Rect& rectangle, size_t& txBegin, size_t& txEnd, size_t& tyBegin, size_t& tyEnd) {
     static const double tileSize = Const::getGame().getTrackTileSize();
 
     auto& p = rectangle.points();
@@ -308,10 +306,10 @@ void determineTileBounds(
     if (x0 > x2) swap(x0, x2); if (x1 > x3) swap(x1, x3); if (x0 > x1) swap(x0, x1); if (x2 > x3) swap(x2, x3);
     if (y0 > y2) swap(y0, y2); if (y1 > y3) swap(y1, y3); if (y0 > y1) swap(y0, y1); if (y2 > y3) swap(y2, y3);
 
-    txBegin = static_cast<unsigned long>(x0 / tileSize);
-    txEnd = static_cast<unsigned long>(x3 / tileSize);
-    tyBegin = static_cast<unsigned long>(y0 / tileSize);
-    tyEnd = static_cast<unsigned long>(y3 / tileSize);
+    txBegin = static_cast<size_t>(x0 / tileSize);
+    txEnd = static_cast<size_t>(x3 / tileSize);
+    tyBegin = static_cast<size_t>(y0 / tileSize);
+    tyEnd = static_cast<size_t>(y3 / tileSize);
 }
 
 void collideCarWithWalls(CarPosition& car) {
@@ -321,7 +319,7 @@ void collideCarWithWalls(CarPosition& car) {
 
     static Walls *allWalls = computeWalls();
 
-    unsigned long txBegin, txEnd, tyBegin, tyEnd;
+    size_t txBegin, txEnd, tyBegin, tyEnd;
     determineTileBounds(car.rectangle, txBegin, txEnd, tyBegin, tyEnd);
 
     // TODO: this shouldn't happen and is only here to prevent segfaults
@@ -339,9 +337,9 @@ void collideCarWithWalls(CarPosition& car) {
         }
     }
 
-    auto cornerX = static_cast<unsigned long>(car.location.x / trackTileSize + 0.5);
+    auto cornerX = static_cast<size_t>(car.location.x / trackTileSize + 0.5);
     if (cornerX < map.width) {
-        auto cornerY = static_cast<unsigned long>(car.location.y / trackTileSize + 0.5);
+        auto cornerY = static_cast<size_t>(car.location.y / trackTileSize + 0.5);
         if (cornerY < map.height) {
             collideCarWithCornerWall(car, allWalls->corner(cornerX, cornerY, 2));
         }
@@ -386,7 +384,7 @@ void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses, const vect
 
         bool signedDistancesNegative = true;
         bool shouldApply = false;
-        for (unsigned long i = 0, size = points.size(); i < size; i++) {
+        for (size_t i = 0, size = points.size(); i < size; i++) {
             auto side = Segment(points[i], points[i + 1 == size ? 0 : i + 1]);
             if (side.intersects(bonus.innerRectangle, unused)) {
                 shouldApply = true;

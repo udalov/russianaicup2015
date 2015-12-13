@@ -96,10 +96,10 @@ void experimentalMutateTracks(vector<Track>& result, default_random_engine& rng)
         auto& t1 = result[x];
         auto& t2 = result[y];
         vector<Go> moves;
-        const unsigned long step = 10;
-        for (unsigned long j = 0, size1 = t1.moves().size(), size2 = t2.moves().size(); j < size1 && j < size2; j += step) {
+        const size_t step = 10;
+        for (size_t j = 0, size1 = t1.moves().size(), size2 = t2.moves().size(); j < size1 && j < size2; j += step) {
             auto& t = (randBool(rng) & 1) ? t1.moves() : t2.moves();
-            for (unsigned long k = 0; k < step && j + k < t.size(); k++) {
+            for (size_t k = 0; k < step && j + k < t.size(); k++) {
                 moves.push_back(t[j + k]);
             }
         }

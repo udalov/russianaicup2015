@@ -23,7 +23,7 @@ struct Tile {
     bool operator==(const Tile& other) const;
     bool operator!=(const Tile& other) const;
 
-    unsigned int manhattanDistanceTo(const Tile& other) const;
+    size_t manhattanDistanceTo(const Tile& other) const;
     bool isNeighborTo(const Tile& other) const;
 
     Point toPoint() const;

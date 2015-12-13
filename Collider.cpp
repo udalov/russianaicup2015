@@ -10,7 +10,7 @@ bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionIn
     auto& points = rect.points();
     auto intersections = 0;
     Point intersectionSum;
-    for (unsigned long i = 0, size = points.size(); i < size; i++) {
+    for (size_t i = 0, size = points.size(); i < size; i++) {
         Point intersection;
         if (segment.intersects(points[i], points[i + 1 == size ? 0 : i + 1], intersection)) {
             intersections++;
@@ -30,7 +30,7 @@ bool collideRectAndSegment(const Rect& rect, const Segment& segment, CollisionIn
     const Point *maxDistPoint = minDistPoint;
     double maxDist = minDist;
 
-    for (unsigned long i = 1, size = points.size(); i < size; i++) {
+    for (size_t i = 1, size = points.size(); i < size; i++) {
         auto& point = points[i];
         auto curDist = line.signedDistanceFrom(point);
         if (curDist < minDist) {
@@ -95,7 +95,7 @@ bool collideCircleAndRect(const Rect& rect, const Circle& circle, CollisionInfo&
     bool collision = false;
     double maxDepth = -1e100;
     CollisionInfo local;
-    for (unsigned long i = 0, size = points.size(); i < size; i++) {
+    for (size_t i = 0, size = points.size(); i < size; i++) {
         auto side = Segment(points[i], points[i + 1 == size ? 0 : i + 1]);
         if (collectCircleAndSegment(side, circle, local) && local.depth > maxDepth) {
             collision = true;
