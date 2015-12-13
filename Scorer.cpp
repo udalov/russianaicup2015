@@ -28,26 +28,6 @@ Scorer::Scorer(const State& startState, const vector<Tile>& path, VisClient *vis
     vis->drawLine(pathSegment[1].p1, pathSegment[1].p2);
 }
 
-bool isFacingTowards(const CarPosition& car, const Segment& segment) {
-    auto& p = car.location;
-    return (Vec(p, segment.p1) ^ car.velocity) < 0 && (car.velocity ^ Vec(p, segment.p2)) < 0;
-}
-
-double angleToTheDesiredPath(const Segment& cur, const Segment& next, const Point& location, const Vec& dir) {
-    Point center;
-    if (cur.p1.y == cur.p2.y && next.p1.x == next.p2.x) {
-        center = Point(next.p1.x, cur.p1.y);
-    } else if (cur.p1.x == cur.p2.x && next.p1.y == next.p2.y) {
-        center = Point(cur.p1.x, next.p1.y);
-    } else {
-        return abs(dir.angleTo(Vec(cur.center(), next.center())));
-    }
-
-    auto angle = Vec(center, next.center()).angleTo(Vec(center, cur.center()));
-    auto v = Vec(center, location).rotate(angle);
-    return abs(dir.angleTo(v));
-}
-
 double Scorer::scoreTrack(const Track& track) const {
     double result = 0.0;
 
@@ -85,8 +65,6 @@ double Scorer::scoreState(const State& state, bool debug) const {
     auto cur =
             nextSeg >= 2 ? pathSegment[nextSeg - 2] :
             next + Vec(next.center(), path.front().toPoint()) * 2.0;
-    // auto& nextNext = pathSegment[nextSeg];
-    // auto& nextNextNext = pathSegment[nextSeg + 1];
 
     /*
     if (debug) {
@@ -106,47 +84,9 @@ double Scorer::scoreState(const State& state, bool debug) const {
         result += travelled;
     }
 
-    /*
-    {
-        auto point = next.center();
-        auto nextNextCenter = nextNext.center();
-        auto d1 = next.p1.distanceTo(nextNextCenter);
-        auto d2 = next.p2.distanceTo(nextNextCenter);
-        if (abs(d1 - d2) > 1e-2) {
-            auto curCenter = cur.center();
-            if (abs(next.p1.distanceTo(curCenter) - next.p2.distanceTo(curCenter)) > 1e-2) {
-                point = d1 < d2 ? next.p1 : next.p2;
-            } else {
-                point = d1 > d2 ? next.p1 : next.p2;
-            }
-        }
-
-        result += nextSeg * 5e6 - point.distanceTo(me.location) * 1e3;
-    }
-    */
-
-    /*
-    auto dir = me.direction();
-    if (!isFacingTowards(me, next)) {
-        auto minAngle = min(
-                abs(dir.angleTo(Vec(location, next.p1))),
-                abs(dir.angleTo(Vec(location, next.p2)))
-        );
-        result -= minAngle;
-    }
-    */
-
-    /*
-    auto nextTurnAngle = abs(dir.angleTo(Vec(next.center(), nextNextNext.center())));
-    result -= nextTurnAngle * 1400.0;
-    */
-
     result += me.velocity.projection(centerLine) * 0.1;
 
     result += (me.medicines + me.projectiles + me.nitroCharges + me.oilCanisters + me.pureScore) * 1.0;
-
-    // TODO
-    // result -= angleToTheDesiredPath(cur, next, location, dir) * 0.01;
 
     return result;
 }

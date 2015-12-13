@@ -26,7 +26,7 @@ using namespace std;
 
 #ifndef ONLINE_JUDGE
 // #define VISUALIZE
-#define DEBUG_OUTPUT
+// #define DEBUG_OUTPUT
 #endif
 
 const int NITRO_CHECK_PERIOD = 10;
