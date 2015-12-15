@@ -68,9 +68,9 @@ double Scorer::scoreState(const State& state, bool debug) const {
 
     /*
     if (debug) {
-        cout << state.original->getTick(); for (auto& tile : path) cout << " " << tile.toString(); cout << endl;
-        cout << "  start " << startState.me().tile().toString() << " cur " << me.tile().toString() << " start-seg " << startSeg << " next-seg " << nextSeg
-            << " cur " << cur.toString() << " next " << next.toString() << endl;
+        cout << state.original->getTick(); for (auto& tile : path) cout << " " << tile; cout << endl;
+        cout << "  start " << startState.me().tile() << " cur " << me.tile() << " start-seg " << startSeg << " next-seg " << nextSeg
+            << " cur " << cur << " next " << next << endl;
     }
     */
 

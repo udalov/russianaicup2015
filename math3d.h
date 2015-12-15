@@ -1,7 +1,9 @@
 #pragma once
 
+#include <ostream>
 #include <string>
 
+using std::ostream;
 using std::string;
 
 // TODO (!): add tests
@@ -29,3 +31,5 @@ struct Vec3D {
 
     string toString() const;
 };
+
+ostream& operator<<(ostream& out, const Vec3D& vec);

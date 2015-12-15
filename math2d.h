@@ -5,10 +5,12 @@
 #endif
 
 #include <cmath>
+#include <iostream>
 #include <string>
 #include <vector>
 
 using std::abs;
+using std::ostream;
 using std::string;
 using std::vector;
 
@@ -159,6 +161,11 @@ struct Circle {
 
     string toString() const;
 };
+
+ostream& operator<<(ostream& out, const Vec& vec);
+ostream& operator<<(ostream& out, const Point& point);
+ostream& operator<<(ostream& out, const Segment& segment);
+ostream& operator<<(ostream& out, const Circle& circle);
 
 double myHypot(double x, double y);
 double myAtan2(double y, double x);

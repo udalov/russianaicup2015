@@ -52,3 +52,8 @@ string Vec3D::toString() const {
     ss << fixed << "(" << x << ", " << y << ", " << z << ")";
     return ss.str();
 }
+
+ostream& operator<<(ostream& out, const Vec3D& vec) {
+    out << vec.toString();
+    return out;
+}

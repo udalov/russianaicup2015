@@ -75,3 +75,5 @@ struct State {
 
     void apply(const Go& move);
 };
+
+ostream& operator<<(ostream& out, const CarPosition& car);

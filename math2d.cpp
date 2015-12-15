@@ -186,7 +186,9 @@ string Point::toString() const {
 }
 
 string Segment::toString() const {
-    return string("<") + p1.toString() + " -> " + p2.toString() + ">";
+    ostringstream ss;
+    ss << "<" << p1 << " -> " << p2 << ">";
+    return ss.str();
 }
 
 string Circle::toString() const {
@@ -299,4 +301,24 @@ Point Rect::center() const {
             (points[0].x + points[1].x + points[2].x + points[3].x) / 4,
             (points[0].y + points[1].y + points[2].y + points[3].y) / 4
     );
+}
+
+ostream& operator<<(ostream& out, const Vec& vec) {
+    out << vec.toString();
+    return out;
+}
+
+ostream& operator<<(ostream& out, const Point& point) {
+    out << point.toString();
+    return out;
+}
+
+ostream& operator<<(ostream& out, const Segment& segment) {
+    out << segment.toString();
+    return out;
+}
+
+ostream& operator<<(ostream& out, const Circle& circle) {
+    out << circle.toString();
+    return out;
 }

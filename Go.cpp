@@ -44,3 +44,8 @@ string Go::toString() const {
     ss << ")";
     return ss.str();
 }
+
+ostream& operator<<(ostream& out, const Go& move) {
+    out << move.toString();
+    return out;
+}

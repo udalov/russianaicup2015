@@ -132,13 +132,13 @@ void moveDebugPhysicsPrediction(const Car& self, const World& world, const Game&
         auto actual = currentState.me();
         auto& predicted = currentInfo->second;
         cout << "tick " << world.getTick() << endl;
-        cout << "  my position " << actual.toString() << endl;
-        cout << "  predicted " << predicted.toString() << endl;
+        cout << "  my position " << actual << endl;
+        cout << "  predicted " << predicted << endl;
         cout << "  diff";
         auto diffLocation = actual.location.distanceTo(predicted.location);
         if (abs(diffLocation) > eps) cout << " location " << diffLocation;
         auto diffVelocity = actual.velocity - predicted.velocity;
-        if (diffVelocity.length() > eps) cout << " velocity " << diffVelocity.toString();
+        if (diffVelocity.length() > eps) cout << " velocity " << diffVelocity;
         auto diffAngle = actual.angle - predicted.angle;
         if (abs(diffAngle) > eps) cout << " angle " << diffAngle;
         auto diffAngular = actual.angularSpeed - predicted.angularSpeed;
@@ -245,8 +245,8 @@ bool shouldFire(const State& startState) {
         location += velocity;
         projectile.push_back(location);
         if (!me.isBuggy() && intersectsWallsHeuristic(location, radius)) {
-            // cout << "  projectile from " << me.toString() << endl;
-            // cout << "  will intersect the wall on tick " << tick << " at " << location.toString() << endl;
+            // cout << "  projectile from " << me << endl;
+            // cout << "  will intersect the wall on tick " << tick << " at " << location << endl;
             break;
         }
     }
@@ -383,7 +383,7 @@ Go solve(const World& world, const Car& self, const vector<Tile>& path) {
         }
         vis->drawRect(state.me().rectangle);
         cout << "tick " << world.getTick() << " tracks " << tracks.size() << " best-score " << bestTrack.score() <<
-            " best-move " << bestMove.toString() << " " << state.me().toString() << endl;
+            " best-move " << bestMove << " " << state.me() << endl;
         scorer.scoreState(state, true);
     }
 #endif
@@ -417,7 +417,7 @@ vector<Tile> computePath(const Car& self, const World& world) {
     for (int steps = 0; steps < 5; steps++) {
         Tile finish = Tile(waypoints[i][0], waypoints[i][1]);
         auto path = bestPath(start, finish);
-        // cout << "  path from " << start.toString() << " to " << finish.toString() << ":"; for (auto& p : path) cout << " " << p.toString(); cout << endl;
+        // cout << "  path from " << start << " to " << finish << ":"; for (auto& p : path) cout << " " << p; cout << endl;
         for (auto it = path.begin() + 1; it != path.end(); ++it) {
             if (it->tile != result.back()) {
                 result.push_back(it->tile);
@@ -464,8 +464,8 @@ bool pointlessSafeMove(const CarPosition& me, const World& world, Go move, int t
     }
     // TODO
     /*
-    cout << "### before " << me.toString() << endl;
-    cout << "### after " << state.me().toString() << endl;
+    cout << "### before " << me << endl;
+    cout << "### after " << state.me() << endl;
     cout << "### distance " << state.me().location.distanceTo(me.location) << endl;
     */
     return state.me().location.distanceTo(me.location) < Const::getGame().getCarHeight() / 2;
@@ -501,7 +501,7 @@ bool safeMode(const CarPosition& me, const World& world, Move& move) {
         }
         go.brake = me.enginePower * go.enginePower < 0.0;
 #ifdef DEBUG_OUTPUT
-        cout << "tick " << world.getTick() << " safe-mode " << go.toString() << " " << me.toString() << endl;
+        cout << "tick " << world.getTick() << " safe-mode " << go << " " << me << endl;
 #endif
         go.applyTo(*me.original, move);
         return true;

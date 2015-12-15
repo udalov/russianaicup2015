@@ -3,11 +3,13 @@
 #include "model/Car.h"
 #include "model/Move.h"
 
+#include <iostream>
 #include <string>
 #include <vector>
 
 using model::Car;
 using model::Move;
+using std::ostream;
 using std::string;
 using std::vector;
 
@@ -42,3 +44,5 @@ struct Go {
 
     string toString() const;
 };
+
+ostream& operator<<(ostream& out, const Go& move);

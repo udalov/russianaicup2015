@@ -51,4 +51,7 @@ namespace std {
     };
 }
 
+ostream& operator<<(ostream& out, const Tile& tile);
+ostream& operator<<(ostream& out, const DirectedTile& tile);
+
 vector<DirectedTile> bestPath(const DirectedTile& start, const Tile& finish);

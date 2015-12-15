@@ -100,10 +100,10 @@ void resolveImpact(
 
     auto velocityChange = normal * (impulseChange * invertedCarMass);
     auto newVelocity = toVec3D(car.velocity) - velocityChange;
-    // if (D) cout << "impact previous-velocity " << car.velocity.toString() << endl;
+    // if (D) cout << "impact previous-velocity " << car.velocity << endl;
     car.velocity = Vec(newVelocity.x, newVelocity.y);
 
-    // if (D) cout << "impact velocity-change " << velocityChange.x << " " << velocityChange.y << " new-velocity " << car.velocity.toString() << endl;
+    // if (D) cout << "impact velocity-change " << velocityChange.x << " " << velocityChange.y << " new-velocity " << car.velocity << endl;
 
     auto angularSpeedChange = (vecBC ^ (normal * impulseChange)) * invertedCarAngularMass;
     car.angularSpeed -= angularSpeedChange.z;
@@ -137,10 +137,10 @@ void resolveSurfaceFriction(
 
     auto velocityChange = tangent * (impulseChange * invertedCarMass);
     auto newVelocity = toVec3D(car.velocity) - velocityChange;
-    // if (D) cout << "surface-friction previous-velocity " << car.velocity.toString() << endl;
+    // if (D) cout << "surface-friction previous-velocity " << car.velocity << endl;
     car.velocity = Vec(newVelocity.x, newVelocity.y);
 
-    // if (D) cout << "surface-friction velocity-change " << velocityChange.x << " " << velocityChange.y << " new-velocity " << car.velocity.toString() << endl;
+    // if (D) cout << "surface-friction velocity-change " << velocityChange.x << " " << velocityChange.y << " new-velocity " << car.velocity << endl;
 
     auto angularSpeedChange = (vecBC ^ (tangent * impulseChange)) * invertedCarAngularMass;
     car.angularSpeed -= angularSpeedChange.z;
@@ -158,7 +158,7 @@ void resolveWallCollision(const CollisionInfo& collision, CarPosition& car) {
     auto angularSpeedBC = Vec3D(0.0, 0.0, car.angularSpeed) ^ vecBC;
     auto velocityBC = toVec3D(car.velocity) + angularSpeedBC;
     auto relativeVelocity = -velocityBC;
-    // if (D) cout << "vec-bc " << vecBC.toString() << " relative-velocity " << relativeVelocity.toString() << endl;
+    // if (D) cout << "vec-bc " << vecBC << " relative-velocity " << relativeVelocity << endl;
     if (relativeVelocity * normal < EPSILON) {
         // TODO: optimize
         resolveImpact(collision, car, normal, vecBC, relativeVelocity);
@@ -265,9 +265,9 @@ void collideCarWithSegmentWall(CarPosition& car, const Segment& wall, int d) {
     if (collideRectAndSegment(car.rectangle, wall, collision)) {
         /*
         if (Debug::debug) {
-            cout << "segment collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
-            cout << "  " << car.toString() << endl;
-            cout << "  (with segment " << wall.toString() << ")" << endl;
+            cout << "segment collision at " << collision.point << " normal " << collision.normal << " depth " << collision.depth << endl;
+            cout << "  " << car << endl;
+            cout << "  (with segment " << wall << ")" << endl;
         }
         */
         resolveWallCollision(collision, car);
@@ -287,9 +287,9 @@ void collideCarWithCornerWall(CarPosition& car, const Circle& corner) {
     if (collideCircleAndRect(car.rectangle, corner, collision)) {
         /*
         if (Debug::debug) {
-            cout << "corner collision at " << collision.point.toString() << " normal " << collision.normal.toString() << " depth " << collision.depth << endl;
-            cout << "  " << car.toString() << endl;
-            cout << "  (with corner at " << corner.toString() << ")" << endl;
+            cout << "corner collision at " << collision.point << " normal " << collision.normal << " depth " << collision.depth << endl;
+            cout << "  " << car << endl;
+            cout << "  (with corner at " << corner << ")" << endl;
         }
         */
         resolveWallCollision(collision, car);
@@ -373,7 +373,7 @@ void collectBonuses(CarPosition& car, vector<BonusPosition>& bonuses, const vect
     Point unused;
     for (auto bonusIndex = bonusBegin; bonusIndex < bonusEnd; bonusIndex++) {
         auto& bonus = bonuses[bonusIndex];
-        // if (Debug::debug) cout << "  bonus at " << bonus.location.toString() << " " << bonus.isAlive << " distance " << location.distanceTo(bonus.location) << endl;
+        // if (Debug::debug) cout << "  bonus at " << bonus.location << " " << bonus.isAlive << " distance " << location.distanceTo(bonus.location) << endl;
         if (!bonus.isAlive) continue;
         auto& bonusLocation = bonus.location;
         auto dx = location.x - bonusLocation.x;
@@ -544,8 +544,8 @@ DirectedTile CarPosition::directedTile() const {
 string CarPosition::toString() const {
     ostringstream ss;
     ss.precision(3);
-    ss << fixed << "car at " << location.toString() <<
-            " going " << velocity.toString() <<
+    ss << fixed << "car at " << location <<
+            " going " << velocity <<
             " angle " << angle <<
             " angular " << angularSpeed <<
             " engine " << enginePower <<
@@ -557,6 +557,11 @@ string CarPosition::toString() const {
             " score " << pureScore <<
             " nitro-cooldown " << nitroCooldown;
     return ss.str();
+}
+
+ostream& operator<<(ostream& out, const CarPosition& car) {
+    out << car.toString();
+    return out;
 }
 
 BonusPosition::BonusPosition(const Bonus *bonus) : original(bonus),

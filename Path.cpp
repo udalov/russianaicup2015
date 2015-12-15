@@ -71,6 +71,16 @@ string DirectedTile::toString() const {
     return ss.str();
 }
 
+ostream& operator<<(ostream& out, const Tile& tile) {
+    out << tile.toString();
+    return out;
+}
+
+ostream& operator<<(ostream& out, const DirectedTile& tile) {
+    out << tile.toString();
+    return out;
+}
+
 namespace std {
     size_t hash<DirectedTile>::operator()(const DirectedTile& dt) const {
         return (dt.tile.x << 16) | (dt.tile.y << 8) | dt.direction;
@@ -98,7 +108,7 @@ vector<DirectedTile> bestPath(const DirectedTile& start, const Tile& finish) {
                 result.push_back(v);
                 auto w = prev.find(v);
                 if (w == prev.end()) {
-                    cerr << "bad path: " << start.toString() << " to " << finish.toString() << endl;
+                    cerr << "bad path: " << start << " to " << finish << endl;
                     break;
                 }
                 if (w->second == start) break;
@@ -135,6 +145,6 @@ vector<DirectedTile> bestPath(const DirectedTile& start, const Tile& finish) {
         }
     }
     
-    cerr << "path not found from " << start.toString() << " to " << finish.toString() << endl;
+    cerr << "path not found from " << start << " to " << finish << endl;
     return { start, DirectedTile(finish, start.direction) };
 }
