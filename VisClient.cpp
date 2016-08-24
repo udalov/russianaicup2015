@@ -6,17 +6,14 @@
 
 using namespace std;
 
-void writeBytes(CActiveSocket& socket, const vector<char>& bytes) {
-    auto byteCount = bytes.size();
+void writeBytes(CActiveSocket& socket, char *bytes, size_t length) {
     size_t offset = 0;
-    int sentByteCount;
-
-    while (offset < byteCount && (sentByteCount = socket.Send((uint8*) &bytes[offset], byteCount - offset)) > 0) {
+    size_t sentByteCount;
+    while (offset < length && (sentByteCount = socket.Send((uint8 *) bytes, length - offset)) > 0) {
         offset += sentByteCount;
     }
-
-    if (offset != byteCount) {
-        cerr << "failed to send: " << offset << " != " << byteCount << endl;
+    if (offset != length) {
+        cerr << "failed to send: " << offset << " != " << length << endl;
     }
 }
 
@@ -27,12 +24,13 @@ void writeString(CActiveSocket& socket, const string& str) {
         return;
     }
 
-    vector<char> bytes;
-    bytes.push_back((char) ((len >> 8) & 0xFF));
-    bytes.push_back((char) (len & 0xFF));
+    static char *buf = new char[65535];
+    buf[0] = static_cast<char>((len >> 8) & 0xFF);
+    buf[1] = static_cast<char>(len & 0xFF);
+    writeBytes(socket, buf, 2);
 
-    bytes.insert(bytes.end(), str.begin(), str.end());
-    writeBytes(socket, bytes);
+    str.copy(buf, len);
+    writeBytes(socket, buf, len);
 }
 
 void VisClient::send(const string& message) {
@@ -56,43 +54,42 @@ VisClient::VisClient(int port) {
 
     valid = true;
     // cerr << "vis client socket opened on port " << port << endl;
+
+    send("nop");
 }
 
 void VisClient::drawLine(const Point& first, const Point& second) {
     if (!valid) return;
     ostringstream ss;
-    ss << "line " << first.x << " " << first.y << " " << second.x << " " << second.y;
+    ss << "drawLine " << first.x << " " << first.y << " " << second.x << " " << second.y;
     send(ss.str());
 }
 
-void VisClient::drawPoly(const vector<Point>& points) {
+void VisClient::drawRect(const Rect& rectangle) {
     if (!valid) return;
+    auto& points = rectangle.points();
     for (size_t i = 0; i < points.size(); i++) {
         drawLine(points[i], points[i + 1 == points.size() ? 0 : i + 1]);
     }
 }
 
-void VisClient::drawRect(const Rect& rectangle) {
-    drawPoly(rectangle.points());
-}
-
 void VisClient::drawCircle(const Point& center, double radius) {
     if (!valid) return;
     ostringstream ss;
-    ss << "circle " << center.x << " " << center.y << " " << radius;
+    ss << "drawCircle " << center.x << " " << center.y << " " << radius;
     send(ss.str());
 }
 
 void VisClient::drawText(const Point& point, const string& text) {
     if (!valid) return;
     ostringstream ss;
-    ss << "text " << point.x << " " << point.y << " " << text;
+    ss << "drawText " << point.x << " " << point.y << " " << text;
     send(ss.str());
 }
 
 void VisClient::drawTextStatic(const Point& point, const string& text) {
     if (!valid) return;
     ostringstream ss;
-    ss << "text-static " << (int) point.x << " " << (int) point.y << " " << text;
+    ss << "drawTextStatic " << (int) point.x << " " << (int) point.y << " " << text;
     send(ss.str());
 }

@@ -41,8 +41,6 @@ void initialize(const Game& game) {
 #else
     vis = new VisClient(-1);
 #endif
-    vis->send("hello");
-
     Const::getInstance().game = game;
     cout.precision(3);
     cout << fixed;

@@ -1,22 +1,40 @@
 import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class LocalServer {
     public static LocalServer INSTANCE = new LocalServer();
 
-    public final Queue<String> messages = new ConcurrentLinkedDeque<String>();
+    private static final int PORT = 29292;
+    private static final int BUFFER_SIZE = 1 << 20;
+    private static final LogLevel LOG_LEVEL = LogLevel.WARN;
+
+    public final Queue<String> messages = new ArrayBlockingQueue<>(1 << 10);
+
+    private enum LogLevel {
+        WARN,
+        INFO,
+        LOG,
+    }
 
     private static void warn(String message) {
-        System.err.println("local-server: " + message);
+        if (LOG_LEVEL.ordinal() >= LogLevel.WARN.ordinal()) {
+            System.err.println("local-server [WARN]: " + message);
+        }
+    }
+
+    private static void info(String message) {
+        if (LOG_LEVEL.ordinal() >= LogLevel.INFO.ordinal()) {
+            System.err.println("local-server [info]: " + message);
+        }
     }
 
     private static void log(String message) {
-        // System.err.println("local-server: " + message);
+        if (LOG_LEVEL.ordinal() >= LogLevel.LOG.ordinal()) {
+            System.err.println("local-server [log]: " + message);
+        }
     }
 
     public void run() {
@@ -24,26 +42,24 @@ public class LocalServer {
             @Override
             public void run() {
                 try {
-                    log("starting");
-                    ServerSocket server = new ServerSocket(29292);
-                    server.setReceiveBufferSize(1 << 20);
-                    log("waiting for connection...");
+                    info("starting");
+                    ServerSocket server = new ServerSocket(PORT);
+                    server.setReceiveBufferSize(BUFFER_SIZE);
+                    info("waiting for connection...");
                     Socket socket = server.accept();
-                    log("connection accepted");
+                    info("connection accepted");
+                    socket.setSendBufferSize(BUFFER_SIZE);
+                    socket.setReceiveBufferSize(BUFFER_SIZE);
+                    socket.setTcpNoDelay(true);
                     DataInputStream inputStream = new DataInputStream(socket.getInputStream());
                     while (true) {
-                        String string;
                         try {
-                            while (inputStream.available() == 0) {
-                                Thread.sleep(15);
-                            }
-                            string = inputStream.readUTF();
+                            String string = inputStream.readUTF();
+                            log("MESSAGE RECEIVED (length " + string.length() + "): " + string);
+                            messages.add(string);
                         } catch (Exception e) {
                             warn("could not receive message: " + e.getMessage() + " (" + e.getClass().getName() + ")");
-                            continue;
                         }
-                        // System.out.println("MESSAGE RECEIVED (length " + string.length() + "): " + string);
-                        messages.add(string);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

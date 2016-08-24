@@ -18,7 +18,6 @@ struct VisClient {
 
     void drawLine(const Point& first, const Point& second);
     void drawRect(const Rect& rectangle);
-    void drawPoly(const vector<Point>& points);
     void drawCircle(const Point& center, double radius);
     void drawText(const Point& point, const string& text);
     void drawTextStatic(const Point& point, const string& text);

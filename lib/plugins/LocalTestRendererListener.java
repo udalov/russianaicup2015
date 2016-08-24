@@ -2,7 +2,13 @@ import model.Game;
 import model.World;
 
 import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.lang.StrictMath.abs;
 import static java.lang.StrictMath.round;
@@ -28,6 +34,21 @@ public final class LocalTestRendererListener {
 
     private final ArrayList<String> messages = new ArrayList<>();
 
+    private final Map<String, Collection<Method>> drawMethods;
+    {
+        drawMethods = new HashMap<>();
+        Method[] methods = LocalTestRendererListener.class.getDeclaredMethods();
+        for (Method method : methods) {
+            if (Modifier.isStatic(method.getModifiers())) continue;
+            Collection<Method> value = drawMethods.get(method.getName());
+            if (value == null) {
+                value = new ArrayList<>(1);
+                drawMethods.put(method.getName(), value);
+            }
+            value.add(method);
+        }
+    }
+
     public void beforeDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
                                 double left, double top, double width, double height) {
         ConstDump.run(game);
@@ -43,46 +64,52 @@ public final class LocalTestRendererListener {
 
         for (String message : messages) {
             try {
-                handleMessage(graphics, message);
+                handleMessage(message);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private void handleMessage(Graphics graphics, String message) {
+    private void handleMessage(String message) {
         String[] command = message.split(" ");
         if (command.length == 0) return;
 
         Object[] args = new Object[command.length - 1];
         for (int i = 0; i < command.length - 1; i++) {
+            String arg = command[i + 1];
             try {
-                args[i] = Double.valueOf(command[i + 1]);
+                args[i] = Double.valueOf(arg);
             } catch (NumberFormatException e) {
-                args[i] = command[i + 1];
+                args[i] = arg;
             }
         }
 
-        switch (command[0]) {
-            case "rect":
-                drawRect((double) args[0], (double) args[1], (double) args[2], (double) args[3]);
-                break;
-            case "line":
-                drawLine((double) args[0], (double) args[1], (double) args[2], (double) args[3]);
-                break;
-            case "circle":
-                drawCircle((double) args[0], (double) args[1], (double) args[2]);
-                break;
-            case "text":
-                drawText((double) args[0], (double) args[1], (String) args[2]);
-                break;
-            case "text-static":
-                drawTextStatic((double) args[0], (double) args[1], (String) args[2]);
-                break;
-            default:
-                log("unknown message: " + message);
-                break;
+        Method method = resolveDrawMethod(command[0], args.length);
+        if (method == null) {
+            warn("unknown message: " + message);
+        } else {
+            try {
+                method.invoke(this, args);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                warn("exception while drawing: " + message);
+                e.printStackTrace();
+            }
         }
+    }
+
+    private Method resolveDrawMethod(String key, int arity) {
+        Collection<Method> methods = drawMethods.get(key);
+        if (methods.size() == 1) {
+            return methods.iterator().next();
+        }
+
+        for (Method candidate : methods) {
+            if (candidate.getParameterTypes().length == arity) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     public void afterDrawScene(Graphics graphics, World world, Game game, int canvasWidth, int canvasHeight,
@@ -90,7 +117,7 @@ public final class LocalTestRendererListener {
         updateFields(graphics, world, game, canvasWidth, canvasHeight, left, top, width, height);
 
         for (String message : messages) {
-            handleMessage(graphics, message);
+            handleMessage(message);
         }
     }
 
@@ -196,18 +223,17 @@ public final class LocalTestRendererListener {
         public final int x;
         public final int y;
 
-        public Point2I(double x, double y) {
-            this.x = toInt(round(x));
-            this.y = toInt(round(y));
-        }
-
         public Point2I(int x, int y) {
             this.x = x;
             this.y = y;
         }
 
+        public Point2I(double x, double y) {
+            this(toInt(round(x)), toInt(round(y)));
+        }
+
         private static int toInt(double value) {
-            @SuppressWarnings("NumericCastThatLosesPrecision") int intValue = (int) value;
+            int intValue = (int) value;
             if (abs((double) intValue - value) < 1.0D) {
                 return intValue;
             }
@@ -226,10 +252,9 @@ public final class LocalTestRendererListener {
     }
 
     private static void warn(String message) {
-        System.err.println("renderer: " + message);
+        System.err.println("renderer [WARN]: " + message);
     }
 
-    private static void log(String message) {
-        // System.err.println("renderer: " + message);
+    private void nop() {
     }
 }
