@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <thread>
 
@@ -10,11 +11,18 @@ using namespace std;
 #ifdef _LINUX
 string javaHome = "/usr";
 #else
-string javaHome = "/Applications/IDEA.app/Contents/jre/jdk/Contents/Home";
+string javaHome = "/Applications/IDEA.app/Contents/jre/jdk/Contents/Home/jre";
 #endif
 
 void runLocalRunner(bool vis) {
-    string command = javaHome + "/bin/java -jar lib/local-runner.jar ";
+    string java = javaHome + "/bin/java";
+    ifstream checkJavaExists(java);
+    if (!checkJavaExists.good()) {
+        cerr << "java executable not found at: " << java << endl;
+        terminate();
+    }
+
+    string command = java + " -jar lib/local-runner.jar ";
     if (vis) command += "lib/local-runner.properties";
     else command += "lib/local-runner-console.properties";
     system(command.c_str());
@@ -42,5 +50,5 @@ int main(int argc, char *argv[]) {
 
     auto finishTime = clock();
 
-    fprintf(stderr, "CPU time: %.3lf\n", (finishTime - startTime) * 1.0 / CLOCKS_PER_SEC);
+    cerr << "CPU time: " << setprecision(3) << (finishTime - startTime) * 1.0 / CLOCKS_PER_SEC << endl;
 }
